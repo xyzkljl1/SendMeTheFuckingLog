@@ -18,6 +18,7 @@ try
     builder.Services.AddRazorPages();
     builder.Services.Configure<UploadPageOptions>(builder.Configuration.GetSection("UploadPage"));
     builder.Services.AddSingleton<GameCatalog>();
+    builder.Services.AddSingleton<HostedImageUrls>();
     builder.Services.AddSingleton(storageLimits);
     builder.Services.AddSingleton<SubmissionStore>();
     builder.Services.AddSingleton(requestLimits);

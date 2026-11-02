@@ -1,7 +1,7 @@
 {
   "id": "fake-game",
   "name": { "zh": "演示游戏", "en": "Fake Game" },
-  "image": "/images/games/fake-game.svg",
+  "image": "games/fake-game.svg",
   "isDemo": true,
   "executablePaths": [],
   "instructions": [
