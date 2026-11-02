@@ -26,6 +26,9 @@ try
     builder.Services.AddSingleton<SubmissionStore>();
     builder.Services.AddSingleton(requestLimits);
     builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddSingleton<IDomainAddressResolver, DomainAddressResolver>();
+    builder.Services.AddSingleton<AuthorAccess>();
+    builder.Services.AddHostedService(services => services.GetRequiredService<AuthorAccess>());
     builder.Services.AddSingleton<RequestCounter>();
     builder.Services.AddSingleton<TrafficStatusReader>();
     builder.Services.AddHostedService(services => services.GetRequiredService<RequestCounter>());

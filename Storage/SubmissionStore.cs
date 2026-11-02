@@ -9,7 +9,7 @@ using SendMeTheFuckingLog.Models;
 
 namespace SendMeTheFuckingLog.Storage;
 
-public sealed class SubmissionStore : IDisposable
+public sealed partial class SubmissionStore : IDisposable
 {
     private const int MetadataLimit = 32 * 1024;
     private const int MaxFiles = 32;

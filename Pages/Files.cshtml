@@ -1,0 +1,49 @@
+@page "/files"
+@model SendMeTheFuckingLog.Pages.FilesModel
+<!DOCTYPE html>
+<html lang="@(Model.English ? "en" : "zh-CN")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@Model.T("上传文件", "Uploaded files") · Mod Log Helper</title>
+    <link rel="stylesheet" href="/css/files.css" />
+</head>
+<body><main>
+    <header><a href="/">Mod Log Helper</a><nav aria-label="Language"><a href="@Model.LanguageLink(false)" lang="zh-CN">中文</a><a href="@Model.LanguageLink(true)" lang="en">English</a></nav></header>
+    <h1>@Model.T("上传文件", "Uploaded files")</h1>
+    @if (Model.FileName is not null)
+    {
+        <nav><a href="@Model.Link(Model.Number)">← @Model.T("返回文件列表", "Back to files")</a><a class="button" href="@Model.FileLink("Download", Model.Submission!, Model.FileName)">@Model.T("下载文件", "Download file")</a></nav>
+        <section class="card">
+            <h2>@Model.FileName</h2><p class="muted">@Model.Submission</p>
+            @if (Model.Truncated) { <p class="notice">@Model.T("仅预览前 64K 字符，下载可查看完整内容。", "Showing the first 64K characters. Download the file to see everything.")</p> }
+            @if (Model.Preview is not null) { <pre>@Model.Preview</pre> }
+            @if (Model.Error is not null) { <p class="notice">@Model.Error</p> }
+        </section>
+    }
+    else if (Model.Listing is { } listing)
+    {
+        <nav><p class="muted">@Model.T("最新上传在前，每页 50 次提交。", "Newest first, 50 uploads per page.")</p><a class="button" href="@Model.Link(Model.Number)">@Model.T("刷新", "Refresh")</a></nav>
+        @foreach (var submission in listing.Submissions)
+        {
+            <section class="card">
+                <div class="title-row"><h2>@(submission.Nickname ?? Model.T("未知昵称", "Unknown nickname"))</h2><span class="game">@Model.GameName(submission.GameId)</span></div>
+                <p class="muted">@submission.Id</p>
+                <div class="table-wrap"><table><thead><tr><th>@Model.T("文件", "File")</th><th>@Model.T("大小", "Size")</th><th>@Model.T("操作", "Actions")</th></tr></thead><tbody>
+                @foreach (var file in submission.Files)
+                {
+                    <tr><td><a href="@Model.FileLink("View", submission.Id, file.Name)">@file.Name</a></td><td>@SendMeTheFuckingLog.Pages.FilesModel.Size(file.Size)</td><td><a href="@Model.FileLink("Download", submission.Id, file.Name)">@Model.T("下载", "Download")</a></td></tr>
+                }
+                </tbody></table></div>
+            </section>
+        }
+        @if (listing.Submissions.Length == 0) { <p class="card">@Model.T("还没有上传文件。", "No files uploaded yet.")</p> }
+        <nav class="pagination" aria-label="Pagination">
+            @if (Model.Number > 1) { <a href="@Model.Link(Model.Number - 1)">@Model.T("上一页", "Previous")</a> }
+            <span>@Model.Number / @listing.TotalPages</span>
+            @if (Model.Number < listing.TotalPages) { <a href="@Model.Link(Model.Number + 1)">@Model.T("下一页", "Next")</a> }
+        </nav>
+    }
+    else { <p class="card notice">@Model.Error</p> }
+</main></body>
+</html>
