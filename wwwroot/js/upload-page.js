@@ -17,7 +17,7 @@
             folderHeading: "打开游戏本地文件", folderDescription: "在 Steam 中右键游戏 → 管理 → 浏览本地文件。",
             dragInstruction: "在打开的窗口中选择全部文件，拖入右侧窗口。",
             dropFolder: "把游戏文件夹里的内容拖到这里", oneFolder: "（也可以回到上一级目录并选择游戏文件夹）", chooseFolder: "选择游戏文件夹",
-            folderPrivacy: "不会上传整个文件夹，只会上传匹配到的日志和配置文件。", supported: "当前支持：",
+            folderPrivacy: "不会上传所有文件，只会上传匹配到的日志和配置文件。", supported: "当前支持：",
             identifying: "正在识别游戏… 文件不会发送。", droppedContents: "拖入的内容",
             detectedGame: "已识别游戏", multipleGames: "识别到多个游戏，请只拖入一个游戏的安装文件夹，或使用手动选择日志。",
             gameNotFound: "没有识别到支持的游戏。请从 Steam 打开本地文件后全选拖入，确保包含游戏程序，或使用手动上传。",
@@ -66,7 +66,7 @@
             folderHeading: "Open your game's local files", folderDescription: "In Steam, right-click the game → Manage → Browse local files.",
             dragInstruction: "Select all files in the window that opens, then drag them into the area on the right.",
             dropFolder: "Drop the contents of your game folder here", oneFolder: "(You can also go up one level and select the game folder.)", chooseFolder: "Choose game folder",
-            folderPrivacy: "The entire folder is never uploaded. Only matching logs and configuration files will be sent.", supported: "Currently supported: ",
+            folderPrivacy: "Not all files will be uploaded. Only matching logs and configuration files will be sent.", supported: "Currently supported: ",
             identifying: "Identifying your game… Nothing will be sent.", droppedContents: "the dropped items",
             detectedGame: "Detected game", multipleGames: "Multiple games were found. Drop the installation folder for just one game, or select logs manually.",
             gameNotFound: "No supported game was identified. Open local files from Steam and drag all contents, including the game executable, or choose files manually.",
@@ -106,8 +106,23 @@
             filesOnly: "Please add files, not folders.", pickGameFirst: "Please choose a game first.", selected: "Added", notSelected: "Not added"
         }
     };
+    const languageStorageKey = "mod-log-helper.language";
+    function initialLanguage() {
+        try {
+            const saved = localStorage.getItem(languageStorageKey);
+            if (saved === "zh" || saved === "en") return saved;
+        } catch {
+            // Language selection still works when browser storage is unavailable.
+        }
+        const preferences = navigator.languages?.length ? navigator.languages : [navigator.language];
+        for (const preference of preferences) {
+            const language = (preference || "").toLowerCase().split("-")[0];
+            if (language === "zh" || language === "en") return language;
+        }
+        return "en";
+    }
     const state = {
-        language: (navigator.language || "en").toLowerCase().startsWith("zh") ? "zh" : "en",
+        language: initialLanguage(),
         route: "auto", manualGame: "", autoFiles: [], manualFiles: [], autoStatus: null, manualStatus: null,
         scanning: false, scanToken: 0, autoHelp: false,
         recognizedGame: null,
@@ -388,6 +403,7 @@
         document.title = (state.language === "zh" ? "发送诊断文件" : "Share diagnostic files") + " · Mod Log Helper";
         document.querySelectorAll("[data-i18n]").forEach(element => { element.textContent = text(element.dataset.i18n); });
         document.querySelectorAll("[data-language]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.language === state.language)));
+        $("status-link").href = "/status?lang=" + state.language;
         $("author-name").textContent = config.authorName;
         $("nickname").placeholder = text("nicknamePlaceholder");
         $("nickname-step-number").textContent = state.route === "manual" ? "3" : "2";
@@ -413,7 +429,15 @@
         }
         state.route = route; render();
     }
-    document.querySelectorAll("[data-language]").forEach(button => button.addEventListener("click", () => { state.language = button.dataset.language; render(); }));
+    document.querySelectorAll("[data-language]").forEach(button => button.addEventListener("click", () => {
+        state.language = button.dataset.language;
+        try {
+            localStorage.setItem(languageStorageKey, state.language);
+        } catch {
+            // Keep the manual choice for this page even if it cannot be persisted.
+        }
+        render();
+    }));
     $("route-auto").addEventListener("click", () => changeRoute("auto"));
     $("route-manual").addEventListener("click", () => changeRoute("manual"));
     $("switch-manual").addEventListener("click", () => {

@@ -22,6 +22,7 @@
 </head>
 <body>
     <header class="site-header">
+        <a id="status-link" class="status-link" href="/status">status (debug)</a>
         <nav class="language-switch" aria-label="Language / 语言">
             <button type="button" data-language="zh" lang="zh-CN" aria-pressed="true">中文</button>
             <button type="button" data-language="en" lang="en" aria-pressed="false">English</button>
@@ -65,7 +66,7 @@
                                 <h3 data-i18n="dropFolder">把游戏文件夹里的内容拖到这里</h3>
                                 <button type="button" class="primary-button" id="choose-folder" data-i18n="chooseFolder">选择游戏文件夹</button>
                                 <input id="folder-input" type="file" webkitdirectory hidden />
-                                <span class="drop-note" data-i18n="folderPrivacy">不会上传整个文件夹，只会上传匹配到的日志和配置文件。</span>
+                                <span class="drop-note" data-i18n="folderPrivacy">不会上传所有文件，只会上传匹配到的日志和配置文件。</span>
                             </div>
                             <p id="folder-status" class="status" role="status" aria-live="polite"></p>
                             <div id="auto-selection-slot">
