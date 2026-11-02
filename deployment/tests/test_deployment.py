@@ -39,11 +39,11 @@ class RegistryTests(unittest.TestCase):
             self.assertEqual(len(registry.versions()), 101)
             self.assertIn("page=2", api.call_args.args[0])
 
-    def test_foreign_public_or_unlinked_packages_are_rejected(self):
+    def test_foreign_private_or_unlinked_packages_are_rejected(self):
         good = {"name": registry.PACKAGE, "package_type": "container", "owner": {"login": registry.OWNER},
-                "visibility": "private", "repository": {"full_name": registry.REPOSITORY}}
-        for field, bad in [("name", "other"), ("owner", {"login": "other"}), ("visibility", "public"),
-                           ("repository", {"full_name": "xyzkljl1/other"})]:
+                "visibility": "public", "repository": {"full_name": registry.REPOSITORY}}
+        for field, bad in [("name", "other"), ("owner", {"login": "other"}), ("visibility", "private"),
+                           ("repository", {"full_name": "xyzkljl1/other"}), ("repository", None)]:
             with patch.object(registry, "api", return_value={**good, field: bad}):
                 with self.assertRaises(RuntimeError):
                     registry.check_package()

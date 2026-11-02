@@ -1,4 +1,4 @@
-"""Manage only this application's private GHCR package; never delete the package."""
+"""Manage only this application's public GHCR package; never delete the package."""
 import argparse
 import json
 import os
@@ -28,19 +28,31 @@ def api(path="", method="GET", allow_missing=False):
     except urllib.error.HTTPError as error:
         if error.code == 404 and allow_missing:
             return None
+        if error.code == 403 and method == "DELETE":
+            raise RuntimeError(
+                "GHCR version deletion failed: HTTP 403. Check package admin permissions and "
+                "GitHub's deletion limit for public versions with over 5,000 downloads; "
+                "old-version cleanup is incomplete."
+            ) from None
         raise RuntimeError(f"GHCR {method} {path or '/'} failed: HTTP {error.code}") from None
 
 
 def check_package(allow_missing=False):
     package = api(allow_missing=allow_missing)
     if package is None:
-        print("Package is absent or inaccessible; first push may create it as private.")
+        print("Package is absent or inaccessible; first push will attempt to create it. "
+              "If GitHub creates it as private, change its visibility to Public and rerun.")
         return
     if (package.get("name") != PACKAGE or package.get("package_type") != "container"
-            or package.get("owner", {}).get("login", "").lower() != OWNER
-            or package.get("visibility") != "private"
-            or package.get("repository", {}).get("full_name", "").lower() != REPOSITORY.lower()):
-        raise RuntimeError("Package identity, private visibility, or linked repository does not match.")
+            or (package.get("owner") or {}).get("login", "").lower() != OWNER
+            or (package.get("repository") or {}).get("full_name", "").lower() != REPOSITORY.lower()):
+        raise RuntimeError("Package identity or linked repository does not match.")
+    if package.get("visibility") != "public":
+        raise RuntimeError(
+            f"Expected a public GHCR package; actual visibility: {package.get('visibility')!r}. "
+            f"Open https://github.com/users/{OWNER}/packages/container/package/{PACKAGE} "
+            "then Package settings > Danger Zone > Change visibility > Public, and rerun the workflow."
+        )
 
 
 def versions():
