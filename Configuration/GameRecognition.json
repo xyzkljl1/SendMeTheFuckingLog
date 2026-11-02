@@ -1,4 +1,9 @@
 {
-  "ue": {},
-  "re": {}
+  "ue": {
+    "Pal": "palworld"
+  },
+  "re": {
+    "OnimushaWotS.exe": "onimusha-way-of-the-sword",
+    "DD2.exe": "dragons-dogma-2"
+  }
 }

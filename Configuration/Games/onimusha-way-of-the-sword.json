@@ -1,0 +1,67 @@
+{
+  "id": "onimusha-way-of-the-sword",
+  "name": {
+    "zh": "鬼武者 剑之道",
+    "en": "Onimusha: Way of the Sword"
+  },
+  "image": "games/onimusha-way-of-the-sword.jpg",
+  "executablePaths": [],
+  "instructions": [
+    {
+      "zh": "在 Steam 库中右键点击鬼武者 剑之道，选择「管理」→「浏览本地文件」。",
+      "en": "Right-click Onimusha: Way of the Sword in your Steam library and choose Manage → Browse local files.",
+      "images": [
+        "guides/steam-open-onimusha-way-of-the-sword-{lang}.gif"
+      ]
+    },
+    {
+      "zh": "在打开的游戏文件夹中，找到 re2_framework_log.txt，选中后拖入日志上传区域。它与游戏 EXE 位于同一层，不在 reframework 文件夹内。",
+      "en": "In the game folder, select re2_framework_log.txt and drag it into the log upload area. It is next to the game EXE, not inside the reframework folder.",
+      "images": [
+        "guides/navigate-onimusha-way-of-the-sword-reframework-log-{lang}.gif"
+      ]
+    },
+    {
+      "zh": "只有作者要求时，才需添加同目录的 re2_fw_config.txt；排查崩溃时，作者也可能需要 reframework_crash.dmp。填写昵称后点击发送。没有日志时，请告知作者。",
+      "en": "Add re2_fw_config.txt from the same folder only if the author requests it. For a crash, the author may also request reframework_crash.dmp. Enter your nickname and click Send. If there is no log, tell the author."
+    }
+  ],
+  "files": [
+    {
+      "id": "reframework-log",
+      "name": {
+        "zh": "REFramework 框架日志",
+        "en": "REFramework log"
+      },
+      "kind": "log",
+      "isPrimary": true,
+      "paths": [
+        "re2_framework_log.txt"
+      ]
+    },
+    {
+      "id": "reframework-settings",
+      "name": {
+        "zh": "REFramework 框架配置",
+        "en": "REFramework settings"
+      },
+      "kind": "config",
+      "isPrimary": false,
+      "paths": [
+        "re2_fw_config.txt"
+      ]
+    },
+    {
+      "id": "reframework-crash",
+      "name": {
+        "zh": "REFramework 崩溃转储",
+        "en": "REFramework crash dump"
+      },
+      "kind": "log",
+      "isPrimary": false,
+      "paths": [
+        "reframework_crash.dmp"
+      ]
+    }
+  ]
+}
