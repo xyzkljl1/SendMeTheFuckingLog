@@ -27,8 +27,8 @@
             gameLabel: "游戏", chooseGame: "请选择游戏", noGames: "暂未配置支持的游戏", guideHeading: "文件位置", demo: "演示", demoOnly: "此游戏仅用于展示控件，不提供文件上传。",
             dropFiles: "把找到的日志和配置文件拖到这里", multipleFiles: "可以选择多个文件，也可以分多次添加。",
             chooseFiles: "选择日志和配置文件", selectedFiles: "已选择的文件", configNote: "配置文件可能包含私人信息，请在发送前检查内容。",
-            nicknameHeading: "填写昵称", nicknameDescription: "使用向作者求助时的昵称，方便对应问题。",
-            nicknameLabel: "你的昵称", required: "必填", nicknamePlaceholder: "例如：你在 Nexus Mods 上的昵称",
+            nicknameHeading: "填写昵称",
+            nicknameLabel: "你的昵称", nicknamePlaceholder: "能分辨上传者即可，N站来的就填N站id",
             sendNote: "点击发送才会上传；旧提交会自动清理。", send: "发送给 {author}", sent: "已保存",
             limits: "单个文件不超过 {file}，一次提交合计不超过 {total}。",
             preparing: "正在检查文件…", uploading: "正在上传… {percent}%", saving: "文件已传输，正在确认保存…",
@@ -73,8 +73,8 @@
             gameLabel: "Game", chooseGame: "Choose a game", noGames: "No supported games configured yet", guideHeading: "File locations", demo: "Demo", demoOnly: "This game is a selection preview. File uploads are unavailable.",
             dropFiles: "Drop your logs and configuration files here", multipleFiles: "Select multiple files, or add them in separate steps.",
             chooseFiles: "Choose logs and settings", selectedFiles: "Selected files", configNote: "Configuration files may contain private information. Check their contents before sending.",
-            nicknameHeading: "Enter your nickname", nicknameDescription: "Use the nickname you used when asking the author for help.",
-            nicknameLabel: "Your nickname", required: "Required", nicknamePlaceholder: "For example, your Nexus Mods nickname",
+            nicknameHeading: "Enter your nickname",
+            nicknameLabel: "Your nickname", nicknamePlaceholder: "Use a name that identifies you. If you're from Nexus Mods, enter your Nexus Mods ID.",
             sendNote: "Uploads start when you click Send. Older submissions are automatically removed.", send: "Send to {author}", sent: "Saved",
             limits: "Up to {file} per file and {total} per submission.",
             preparing: "Checking files…", uploading: "Uploading… {percent}%", saving: "Files transferred. Confirming they are saved…",
@@ -177,8 +177,8 @@
         const button = $("send-files");
         button.textContent = state.sending ? text(state.progress === null ? "preparing" : state.progress === 100 ? "saving" : "uploading", { percent: state.progress || 0 })
             : state.submitted ? text("sent") : text("send", { author: config.authorName });
-        // Keep invalid submissions clickable to give a clear validation message instead of a silent disabled button.
-        button.disabled = state.sending || state.scanning || state.submitted || invalid === "demoOnly" || (state.route === "auto" && state.candidates.length > 0 && !state.confirmedGame);
+        // Require a nickname before sending; other validation errors can still explain how to fix the selection.
+        button.disabled = !$("nickname").value.trim() || state.sending || state.scanning || state.submitted || invalid === "demoOnly" || (state.route === "auto" && state.candidates.length > 0 && !state.confirmedGame);
         $("upload-limits").textContent = text("limits", { file: sizeText(config.maxFileBytes), total: sizeText(config.maxSubmissionBytes) });
         const status = state.uploadStatus;
         $("upload-status").textContent = status ? text(status.key, status.args) : (invalid === "tooLarge" || invalid === "oneGame" ? text(invalid) : "");
