@@ -8,3 +8,6 @@ obj/
 *.suo
 AGENTS.md
 TODO.md
+.docker-ci/
+.ssh-*/
+.smoke/

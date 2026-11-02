@@ -1,0 +1,143 @@
+name: Deploy to Lightsail
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never interrupt a deployment halfway through a container replacement or cleanup.
+concurrency:
+  group: send-me-the-log-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    if: github.repository == 'xyzkljl1/SendMeTheFuckingLog' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      IMAGE: ghcr.io/xyzkljl1/sendmethefuckinglog
+      DOCKER_CONFIG: ${{ github.workspace }}/.docker-ci
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the triggering commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Check configuration and deployment logic
+        run: |
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_PORT; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing repository variable: $name"
+              exit 1
+            fi
+          done
+          if [[ -z "$DEPLOY_SSH_KEY" ]]; then
+            echo '::error::Missing repository secret: DEPLOY_SSH_KEY'
+            exit 1
+          fi
+          python3 -B -m unittest discover -s deployment/tests -v
+          bash -n deployment/healthcheck.sh
+          APP_IMAGE="$IMAGE@sha256:$(printf '0%.0s' {1..64})" DEPLOY_RUN=1 docker compose config --quiet
+          printf 'IMAGE_TAG=%s:sha-%s-run-%s-%s\n' "$IMAGE" "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+
+      - name: Check existing package ownership and privacy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B deployment/registry.py preflight
+
+      - name: Build the application image on GitHub
+        run: |
+          mkdir -p "$DOCKER_CONFIG"
+          docker buildx build --platform linux/amd64 --load --provenance=false --sbom=false \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --tag "$IMAGE_TAG" .
+
+      - name: Start and check the image before publishing
+        run: |
+          mkdir -p .smoke/data .smoke/tmp
+          sudo chown 1000:1000 .smoke/data .smoke/tmp
+          docker run --detach --name send-me-the-log-smoke --init \
+            --memory 128m --memory-swap 128m --pids-limit 128 \
+            --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --publish 127.0.0.1::8080 \
+            --mount "type=bind,src=$PWD/.smoke/data,dst=/app/data" \
+            --mount "type=bind,src=$PWD/.smoke/tmp,dst=/app/tmp" "$IMAGE_TAG"
+          healthy=false
+          for attempt in {1..30}; do
+            state=$(docker inspect --format '{{.State.Health.Status}}' send-me-the-log-smoke)
+            if [[ "$state" == healthy ]]; then healthy=true; break; fi
+            if [[ "$state" == unhealthy ]]; then break; fi
+            sleep 2
+          done
+          if [[ "$healthy" != true ]]; then
+            docker logs send-me-the-log-smoke
+            echo '::error::Image failed its health check; nothing will be published or deployed.'
+            exit 1
+          fi
+          endpoint=$(docker port send-me-the-log-smoke 8080/tcp)
+          for path in / /css/site.css /js/upload-page.js; do
+            curl --fail --silent --show-error --max-time 10 "http://$endpoint$path" --output /dev/null
+          done
+          docker rm --force send-me-the-log-smoke
+
+      - name: Publish the private image
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          docker push "$IMAGE_TAG"
+          python3 -B deployment/registry.py verify
+          reference=$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE_TAG")
+          if [[ ! "$reference" =~ ^ghcr\.io/xyzkljl1/sendmethefuckinglog@sha256:[a-f0-9]{64}$ ]]; then
+            echo '::error::Unexpected published image reference.'
+            exit 1
+          fi
+          printf 'APP_IMAGE=%s\n' "$reference" >> "$GITHUB_ENV"
+          printf 'digest=%s\n' "${reference##*@}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy and clean old server images
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B deployment/deploy.py
+
+      - name: Keep only the deployed version in GHCR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYED_DIGEST: ${{ steps.publish.outputs.digest }}
+        run: python3 -B deployment/registry.py cleanup --digest "$DEPLOYED_DIGEST"
+
+      - name: Report success
+        run: |
+          printf 'Deployed commit `%s` as `%s`.\n\n' "$GITHUB_SHA" "$APP_IMAGE" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Health checks passed. Only the current project image remains on the server and in GHCR. Upload data was preserved.\n' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove runner credentials and test container
+        if: always()
+        run: |
+          if docker container inspect send-me-the-log-smoke >/dev/null 2>&1; then
+            docker rm --force send-me-the-log-smoke
+          fi
+          python3 - <<'PY'
+          import os, shutil
+          from pathlib import Path
+          root = Path(os.environ['GITHUB_WORKSPACE']).resolve()
+          for name in ['.docker-ci', *[p.name for p in root.glob('.ssh-*')]]:
+              path = root / name
+              if path.is_symlink() or not path.resolve().is_relative_to(root):
+                  raise RuntimeError('Refusing unsafe credential cleanup path')
+              if path.exists():
+                  shutil.rmtree(path)
+          PY

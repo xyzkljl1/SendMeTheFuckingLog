@@ -1,0 +1,37 @@
+name: send-me-the-log
+services:
+  web:
+    image: ${APP_IMAGE:?APP_IMAGE must contain the approved GHCR digest}
+    platform: linux/amd64
+    container_name: send-me-the-log
+    restart: unless-stopped
+    init: true
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    memswap_limit: 128m
+    pids_limit: 128
+    stop_grace_period: 30s
+    ports:
+      - "0.0.0.0:80:8080"
+    volumes:
+      - type: bind
+        source: /opt/send-me-the-log/app/data
+        target: /app/data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /opt/send-me-the-log/app/tmp
+        target: /app/tmp
+        bind:
+          create_host_path: false
+    labels:
+      io.github.xyzkljl1.application: send-me-the-log
+      io.github.xyzkljl1.deployment-run: ${DEPLOY_RUN:?DEPLOY_RUN is required}
+    logging:
+      driver: local
+      options:
+        max-size: "5m"
+        max-file: "2"

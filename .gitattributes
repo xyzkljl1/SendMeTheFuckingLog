@@ -1,0 +1,6 @@
+Dockerfile text eol=lf
+compose.yaml text eol=lf
+.github/workflows/*.yml text eol=lf
+deployment/*.py text eol=lf
+deployment/*.sh text eol=lf
+deployment/tests/*.py text eol=lf
