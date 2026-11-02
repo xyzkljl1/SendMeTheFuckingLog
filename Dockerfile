@@ -19,7 +19,7 @@ ENV ASPNETCORE_ENVIRONMENT=Production \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     HOME=/app TMPDIR=/app/tmp ASPNETCORE_TEMP=/app/tmp
 USER 1000:1000
-EXPOSE 8080
+EXPOSE 8080 8443
 HEALTHCHECK --interval=5s --timeout=3s --start-period=20s --retries=6 \
     CMD ["bash", "/app/healthcheck.sh"]
 ENTRYPOINT ["dotnet", "/app/SendMeTheFuckingLog.dll"]

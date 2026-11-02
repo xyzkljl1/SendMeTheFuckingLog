@@ -9,6 +9,8 @@
 !Models/**
 !Monitoring/
 !Monitoring/**
+!Hosting/
+!Hosting/**
 !Pages/
 !Pages/**
 !Storage/

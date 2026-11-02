@@ -49,7 +49,7 @@ jobs:
           fi
           python3 -B -m unittest discover -s deployment/tests -v
           bash -n deployment/healthcheck.sh
-          APP_IMAGE="$IMAGE@sha256:$(printf '0%.0s' {1..64})" DEPLOY_RUN=1 docker compose config --quiet
+          APP_IMAGE="$IMAGE@sha256:$(printf '0%.0s' {1..64})" DEPLOY_RUN=1 TLS_DOMAIN=www.sendmethefuckinglog.top docker compose config --quiet
           printf 'IMAGE_TAG=%s:sha-%s-run-%s-%s\n' "$IMAGE" "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
 
       - name: Check existing package ownership and public visibility
@@ -92,6 +92,9 @@ jobs:
           done
           docker rm --force send-me-the-log-smoke
 
+      - name: Test HTTPS in the Linux image
+        run: python3 -B Tests/https_test.py --image "$IMAGE_TAG"
+
       - name: Publish the public image
         id: publish
         env:
@@ -113,6 +116,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python3 -B deployment/deploy.py
 
+      - name: Verify public HTTPS and certificate
+        run: python3 -B deployment/verify_https.py
+
       - name: Keep only the deployed version in GHCR
         env:
           GH_TOKEN: ${{ github.token }}
@@ -129,6 +135,9 @@ jobs:
         run: |
           if docker container inspect send-me-the-log-smoke >/dev/null 2>&1; then
             docker rm --force send-me-the-log-smoke
+          fi
+          if docker container inspect send-me-the-log-tls-smoke >/dev/null 2>&1; then
+            docker rm --force send-me-the-log-tls-smoke
           fi
           python3 - <<'PY'
           import os, shutil

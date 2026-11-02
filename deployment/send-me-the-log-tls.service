@@ -1,0 +1,18 @@
+# Managed by send-me-the-log deployment.
+[Unit]
+Description=Renew send-me-the-log HTTPS certificate
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 -B /opt/send-me-the-log/tls/tls_manager.py
+TimeoutStartSec=12min
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/send-me-the-log

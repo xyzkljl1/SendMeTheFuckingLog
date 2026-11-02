@@ -5,10 +5,13 @@ using SendMeTheFuckingLog.Models;
 using SendMeTheFuckingLog.Storage;
 using SendMeTheFuckingLog.Monitoring;
 using System.Net;
+using SendMeTheFuckingLog.Hosting;
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+    using var https = new HttpsTransport(builder);
+    builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(140));
     var storageLimits = builder.Configuration.GetSection("Storage").Get<StorageLimits>() ?? new StorageLimits();
     storageLimits.Validate();
     var requestLimits = builder.Configuration.GetSection("GlobalRateLimit").Get<RequestLimits>() ?? new RequestLimits();
@@ -44,8 +47,19 @@ try
             await context.Response.WriteAsync("OK");
             return;
         }
+        // ACME must remain reachable even when the public request quota is exhausted.
+        if (await https.HandleChallengeAsync(context)) return;
         var status = requestCounter.Admit();
-        if (status == 200) { await next(context); return; }
+        if (status == 200)
+        {
+            if (https.IsChallengePath(context.Request.Path))
+            {
+                context.Response.StatusCode = 404;
+                return;
+            }
+            if (!await https.HandleTransportAsync(context)) await next(context);
+            return;
+        }
         context.Response.StatusCode = status;
         context.Response.Headers.CacheControl = "no-store";
         if (context.Request.Path.StartsWithSegments("/api"))

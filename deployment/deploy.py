@@ -33,6 +33,8 @@ def main():
         "traffic": {name: (root / "deployment" / name).read_text(encoding="utf-8") for name in (
             "traffic_monitor.py", "traffic-limits.json", "send-me-the-log-traffic.service",
             "send-me-the-log-traffic.timer")},
+        "tls": {name: (root / "deployment" / name).read_text(encoding="utf-8") for name in (
+            "tls_manager.py", "tls.json", "send-me-the-log-tls.service", "send-me-the-log-tls.timer")},
     }
     bootstrap = "import json,sys; p=json.load(sys.stdin); exec(compile(p.pop('script'),'<deployment>','exec')); main(p)"
     # Temporary credentials are inside the checkout and removed even on failure.
@@ -46,7 +48,7 @@ def main():
                 "-o", "UpdateHostKeys=no", "-o", "ConnectTimeout=15",
                 "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4",
                 f"{user}@{host}", "sudo -n python3 -c " + shlex.quote(bootstrap)]
-        subprocess.run(args, input=json.dumps(payload), text=True, check=True, timeout=1000)
+        subprocess.run(args, input=json.dumps(payload), text=True, check=True, timeout=1800)
 
 
 if __name__ == "__main__":

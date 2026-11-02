@@ -1,4 +1,5 @@
-"""Executed over SSH as root. Only two project systemd units are installed outside ROOT."""
+"""Executed over SSH as root; only project systemd units are installed outside ROOT."""
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -13,6 +14,8 @@ APP_LABEL = "io.github.xyzkljl1.application"
 APP = "send-me-the-log"
 TRAFFIC_SERVICE = APP + "-traffic.service"
 TRAFFIC_TIMER = APP + "-traffic.timer"
+TLS_SERVICE = APP + "-tls.service"
+TLS_TIMER = APP + "-tls.timer"
 UNIT_DIRECTORY = Path("/etc/systemd/system")
 UNIT_MARKER = "# Managed by send-me-the-log deployment.\n"
 
@@ -42,7 +45,7 @@ def plain(path, system_unit=False):
         if part.is_symlink():
             raise RuntimeError(f"Refusing symlink in deployment path: {part}")
     if system_unit:
-        allowed = {UNIT_DIRECTORY / (name + suffix) for name in (TRAFFIC_SERVICE, TRAFFIC_TIMER)
+        allowed = {UNIT_DIRECTORY / (name + suffix) for name in (TRAFFIC_SERVICE, TRAFFIC_TIMER, TLS_SERVICE, TLS_TIMER)
                    for suffix in ("", ".new")}
         if path not in allowed:
             raise RuntimeError("Unexpected systemd unit path.")
@@ -117,6 +120,44 @@ def inspect_container():
     return json.loads(output("docker", "inspect", ids))[0] if ids else None
 
 
+def install_tls(payload):
+    files = payload["tls"]
+    if (set(files) != {"tls_manager.py", "tls.json", TLS_SERVICE, TLS_TIMER}
+            or any(not isinstance(value, str) for value in files.values())):
+        raise ValueError("Missing or unexpected TLS deployment files.")
+    compile(files["tls_manager.py"], "tls_manager.py", "exec")
+    directory = ROOT / "tls"
+    plain(directory)
+    directory.mkdir(mode=0o700, exist_ok=True)
+    require_root_owner(directory)
+    os.chmod(directory, 0o700)
+    for name in (TLS_SERVICE, TLS_TIMER):
+        path = UNIT_DIRECTORY / name
+        plain(path, system_unit=True)
+        if not files[name].startswith(UNIT_MARKER):
+            raise ValueError("TLS unit ownership marker is missing.")
+        if path.exists() and (not path.is_file() or not path.read_text(encoding="utf-8").startswith(UNIT_MARKER)):
+            raise RuntimeError(f"Refusing to replace an unrelated systemd unit: {path}")
+    atomic_write(directory / "tls_manager.py", files["tls_manager.py"])
+    spec = importlib.util.spec_from_file_location("tls_manager", directory / "tls_manager.py")
+    manager = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(manager)
+    manager.ROOT = ROOT
+    domain = manager.settings(files["tls.json"])
+    manager.prepare()
+    atomic_write(directory / "tls.json", files["tls.json"])
+    if (UNIT_DIRECTORY / TLS_TIMER).exists():
+        run("systemctl", "stop", TLS_TIMER, timeout=30)
+    for name in (TLS_SERVICE, TLS_TIMER):
+        atomic_write(UNIT_DIRECTORY / name, files[name], system_unit=True)
+    run("systemctl", "daemon-reload")
+    run("systemctl", "enable", "--now", TLS_TIMER)
+    run("systemctl", "is-enabled", "--quiet", TLS_TIMER)
+    run("systemctl", "is-active", "--quiet", TLS_TIMER)
+    print("TLS: renewal timer enabled and active.", flush=True)
+    return manager, domain
+
+
 def check_container(container, run_number):
     if container is None:
         return
@@ -182,11 +223,13 @@ def main(payload):
     lock_path = ROOT / ".deployment.lock"
     plain(lock_path)
     with lock_path.open("a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        # A deployment waits for an in-progress renewal rather than interrupting it.
+        fcntl.flock(lock, fcntl.LOCK_EX)
         run("docker", "info", stdout=subprocess.DEVNULL)
         run("docker", "compose", "version")
         check_container(inspect_container(), payload["run"])
         install_traffic_monitor(payload)
+        tls, domain = install_tls(payload)
         # Reuse the test deployment's data path; no copying or deleting uploads.
         for directory in (ROOT / "app" / "data", ROOT / "app" / "tmp"):
             plain(directory)
@@ -211,18 +254,23 @@ def main(payload):
                     or not image_info["Config"].get("Healthcheck")):
                 raise RuntimeError("Pulled image does not match the expected application/revision/architecture.")
             atomic_write(ROOT / "compose.yaml", payload["compose"])
-            atomic_write(ROOT / "image.env", f"APP_IMAGE={payload['image']}\nDEPLOY_RUN={payload['run']}\n")
+            atomic_write(ROOT / "image.env", f"APP_IMAGE={payload['image']}\nDEPLOY_RUN={payload['run']}\nTLS_DOMAIN={domain}\n")
             compose = docker + ["compose", "--project-name", APP, "--project-directory", str(ROOT),
                                 "--env-file", str(ROOT / "image.env"), "-f", str(ROOT / "compose.yaml")]
             run(*compose, "config", "--quiet")
             # Never clear counters while the old process can checkpoint them again.
-            run(*compose, "stop", "--timeout", "30", "web", timeout=60)
+            run(*compose, "stop", "--timeout", "150", "web", timeout=180)
             stopped = inspect_container()
             if stopped and stopped["State"]["Running"]:
                 raise RuntimeError("Old application is still running; request counters were not reset.")
             reset_request_counts()
             # No automatic rollback; failed starts leave old images available for investigation.
             run(*compose, "up", "--detach", "--force-recreate", "--no-build", "--pull", "never",
+                "--wait", "--wait-timeout", "120", "web", timeout=180)
+            # A first deployment starts with HTTP validation only. Issuance activates HTTPS.
+            # On subsequent deployments, valid persisted certificates are available immediately.
+            tls.ensure_certificate(domain)
+            run(*compose, "up", "--detach", "--no-build", "--pull", "never",
                 "--wait", "--wait-timeout", "120", "web", timeout=180)
             current = inspect_container()
             if (not current or current["Image"] != image_info["Id"]

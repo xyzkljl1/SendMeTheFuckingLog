@@ -129,6 +129,8 @@ class RemoteTests(unittest.TestCase):
             stack.enter_context(patch.object(remote, "plain"))
             stack.enter_context(patch.object(remote, "atomic_write"))
             stack.enter_context(patch.object(remote, "install_traffic_monitor"))
+            tls = MagicMock()
+            stack.enter_context(patch.object(remote, "install_tls", return_value=(tls, "www.sendmethefuckinglog.top")))
             stack.enter_context(patch.object(remote.os, "geteuid", return_value=0, create=True))
             stack.enter_context(patch.object(remote.os, "uname", return_value=SimpleNamespace(machine="x86_64"), create=True))
             stack.enter_context(patch.object(remote.os, "umask"))
@@ -146,6 +148,7 @@ class RemoteTests(unittest.TestCase):
             else:
                 remote.main(payload)
                 cleanup.assert_called_once_with("current")
+                tls.ensure_certificate.assert_called_once_with("www.sendmethefuckinglog.top")
             reset.assert_called_once_with()
 
 
