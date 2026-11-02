@@ -3,8 +3,8 @@ namespace SendMeTheFuckingLog.Storage;
 public sealed class StorageLimits
 {
     public decimal MaxStorageMiB { get; init; } = 1024;
-    public decimal MaxFileMiB { get; init; } = 5;
-    public decimal MaxSubmissionMiB { get; init; } = 20;
+    public decimal MaxFileMiB { get; init; } = 20;
+    public decimal MaxSubmissionMiB { get; init; } = 100;
 
     public long StorageBytes => Bytes(MaxStorageMiB);
     public long FileBytes => Bytes(MaxFileMiB);
