@@ -74,13 +74,16 @@ def build_template(template, data):
         selected = base + "-selected"
         layer = {"type": "explorer", "level": index, "start": 0}
         scenes[base] = {"layers": [layer]}
-        timeline.append({"action": "hold", "scene": base, "at": [1010, 900], "durationMs": 1400})
+        opening = {"action": "hold", "scene": base, "durationMs": 1400 if index == 0 else 400}
+        if index == 0:
+            opening["at"] = [1010, 900]
+        timeline.append(opening)
         if start:
             # Show consecutive scroll positions, retaining the complete input listing.
             for offset in range(VISIBLE_ROWS, start + 1, VISIBLE_ROWS):
                 page = f"{base}-scroll-{offset}"
                 scenes[page] = {"layers": [{**layer, "start": offset}]}
-                timeline.append({"action": "hold", "scene": page, "at": [1215, 740], "durationMs": 600})
+                timeline.append({"action": "hold", "scene": page, "durationMs": 600})
             base = page
         layer = {**layer, "start": start, "selected": target}
         scenes[selected] = {"layers": [layer]}
@@ -91,7 +94,7 @@ def build_template(template, data):
             {"action": "hold", "scene": selected, "durationMs": 100}])
         if index < len(data["levels"]) - 1:
             timeline.extend([{"action": "click", "durationMs": 160},
-                             {"action": "hold", "durationMs": 250}])
+                             {"action": "hold", "durationMs": 100}])
         else:
             timeline.append({"action": "hold", "durationMs": 1800})
         previews.append(selected)

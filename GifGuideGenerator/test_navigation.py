@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import generate
 import navigation
+from PIL import Image
 
 
 def entry(name, kind="file"):
@@ -70,6 +71,33 @@ class NavigationTests(unittest.TestCase):
         self.assertIn("directory-0-scroll-14", built["scenes"])
         self.assertIn("directory-0-scroll-28", built["scenes"])
         self.assertEqual(len(data["levels"][0]["entries"]), 30)
+
+    def test_cursor_continues_from_previous_folder_click(self):
+        data = listing()
+        data["levels"][1]["entries"].reverse()
+        data["levels"][1]["target"] = "settings.ini"
+        template = generate.read_config(generate.inside("templates/navigate-to-file.json"))
+        built = navigation.build_template(template, data)
+        stop = next(i for i, step in enumerate(built["timeline"]) if step.get("scene") == "upload-ready")
+        built["timeline"] = built["timeline"][:stop]
+        renderer = generate.Renderer(built, {"id": "test", "uploadPage": "unused.png"}, "en", None)
+        with patch.object(renderer, "scene", return_value=Image.new("RGB", (1, 1))), \
+             patch.object(generate, "draw_cursor") as cursor:
+            _, durations, starts = renderer.frames()
+        positions = [call.args[1] for call in cursor.call_args_list]
+        elapsed = 0
+        opening = None
+        for index, duration in enumerate(durations):
+            if elapsed == starts["directory-1"]:
+                opening = index
+                break
+            elapsed += duration
+        self.assertIsNotNone(opening)
+        self.assertEqual(positions[opening], positions[opening - 1])
+        self.assertEqual(positions[opening], (210, navigation.ROW_TOP + navigation.ROW_HEIGHT + 14))
+        self.assertEqual(positions[opening + 1][0], 210)
+        self.assertLess(positions[opening + 1][1], positions[opening][1])
+        self.assertGreaterEqual(positions[opening + 1][1], navigation.ROW_TOP + 14)
 
     def test_stdin_cli_does_not_require_game_config_or_screenshots(self):
         stream = TextIOWrapper(BytesIO(json.dumps(listing()).encode("utf-8")), encoding="utf-8")
