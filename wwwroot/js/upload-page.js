@@ -13,11 +13,11 @@
             automaticGuideAlt: "操作示例：从 Steam 打开游戏目录，鼠标框选全部内容（也可按 Ctrl+A），再拖入上传区域。",
             recipientBefore: "文件将交给作者", recipientAfter: "，用于排查 Mod 问题。",
             chooseRoute: "选择方式", autoTitle: "自动选择日志", autoDescription: "选择游戏文件夹，自动查找日志",
-            manualTitle: "手动选择日志", manualDescription: "跟随指示找到日志并上传",
+            manualTitle: "手动选择日志", manualDescription: "按下面的演示，找到文件后发送",
             folderHeading: "打开游戏本地文件", folderDescription: "在 Steam 中右键游戏 → 管理 → 浏览本地文件。",
             dragInstruction: "在打开的窗口中选择全部文件，拖入右侧窗口。",
             dropFolder: "把游戏文件夹里的内容拖到这里", oneFolder: "（也可以回到上一级目录并选择游戏文件夹）", chooseFolder: "选择游戏文件夹",
-            folderPrivacy: "不会上传所有文件，只会上传匹配到的日志和配置文件。", supported: "当前支持：",
+            folderPrivacy: "只发送需要的日志和配置，不会上传整个游戏。", supported: "当前支持：",
             identifying: "正在识别游戏… 文件不会发送。", droppedContents: "拖入的内容",
             detectedGame: "已识别游戏", multipleGames: "识别到多个游戏，请只拖入一个游戏的安装文件夹，或使用手动选择日志。",
             gameNotFound: "没有识别到支持的游戏。请从 Steam 打开本地文件后全选拖入，确保包含游戏程序，或使用手动上传。",
@@ -26,16 +26,16 @@
             viewManual: "查看手动查找指引 →", gameHeading: "选择游戏",
             uploadHeading: "上传日志", chooseGame: "请选择游戏", noGames: "暂未配置支持的游戏", guideHeading: "文件位置", demo: "演示", demoOnly: "此游戏仅用于展示控件，不提供文件上传。",
             dropFiles: "把找到的日志和配置文件拖到这里", multipleFiles: "可以选择多个文件，也可以分多次添加。",
-            primaryFile: "主要 · 必需", secondaryFile: "次要", secondaryNote: "（只有作者要求时才需要上传）",
-            missingRequired: "请先添加全部主要日志。", missingPrimary: "尚未添加主要日志：{names}。",
+            primaryFile: "必须上传", secondaryFile: "次要", secondaryNote: "（只有作者要求时才需要上传）",
+            missingRequired: "请先添加必须上传的日志。", missingPrimary: "还需要添加 {names}。",
             chooseFiles: "选择日志和配置文件", selectedFiles: "已选择的文件",
             nicknameHeading: "填写昵称",
             nicknameInputLabel: "输入昵称：",
             nicknamePlaceholder: "能分辨上传者即可，N站来的就填N站id",
             send: "发送给 {author}", sent: "已保存",
             limits: "单个文件不超过 {file}，一次提交合计不超过 {total}。",
-            preparing: "正在检查文件…", uploading: "正在上传… {percent}%", saving: "文件已传输，正在确认保存…",
-            success: "保存成功，共 {count} 个文件。", receiptHeading: "提交编号", receiptHint: "把这个编号告诉作者，方便找到你的文件。",
+            preparing: "正在检查文件…", uploading: "正在上传… {percent}%", saving: "正在发送…",
+            success: "发送成功！", receiptHint: "告诉作者，你填写的昵称是：",
             invalidNickname: "请填写有效昵称（最多 60 个字符）。", noFiles: "请先选择要发送的文件。",
             tooLarge: "文件超过大小限制，请按页面上的限制重新选择。", oneGame: "一次只能提交一个游戏的文件，请选择具体的游戏目录。",
             siteBusy: "网站暂时繁忙，请稍后重试。已选择的文件和昵称仍然保留。",
@@ -46,7 +46,7 @@
             unknownResult: "连接中断，无法确认是否保存成功。请先联系作者核实，避免重复提交。",
             readFailed: "无法读取所选文件，请重新选择后再试。", secureRequired: "请通过 HTTPS 打开本站后再上传文件。",
             log: "日志", config: "配置", copy: "复制路径", copied: "已复制", copyFailed: "无法复制，请选中路径手动复制。",
-            scanning: "正在检查 {folder}… 文件不会发送。", found: "识别成功",
+            scanning: "正在检查 {folder}… 文件不会发送。", found: "找到日志了！",
             notFound: "在 {folder} 中没有找到诊断文件。请按手动指引检查日志位置。", folderOnly: "请拖入整个游戏文件夹，或全选游戏文件夹里的内容一起拖入。",
             folderUnsupported: "此浏览器不支持拖入文件夹，请使用「选择文件夹」按钮。",
             pickerUnsupported: "此浏览器不支持选择文件夹，请使用手动选择文件，或更新浏览器。",
@@ -62,11 +62,11 @@
             automaticGuideAlt: "Example: open your game's folder from Steam, drag a selection box around all items (or press Ctrl+A), then drag them into the upload area.",
             recipientBefore: "Files will be sent to the author", recipientAfter: " to troubleshoot your mod issue.",
             chooseRoute: "Choose a method", autoTitle: "Select logs automatically", autoDescription: "Choose your game folder to find logs automatically",
-            manualTitle: "Select logs manually", manualDescription: "Follow the instructions to find and upload logs",
+            manualTitle: "Select logs manually", manualDescription: "Follow the demo below to find and send the files",
             folderHeading: "Open your game's local files", folderDescription: "In Steam, right-click the game → Manage → Browse local files.",
             dragInstruction: "Select all files in the window that opens, then drag them into the area on the right.",
             dropFolder: "Drop the contents of your game folder here", oneFolder: "(You can also go up one level and select the game folder.)", chooseFolder: "Choose game folder",
-            folderPrivacy: "Not all files will be uploaded. Only matching logs and configuration files will be sent.", supported: "Currently supported: ",
+            folderPrivacy: "Only the logs and settings we need will be sent, not the whole game.", supported: "Currently supported: ",
             identifying: "Identifying your game… Nothing will be sent.", droppedContents: "the dropped items",
             detectedGame: "Detected game", multipleGames: "Multiple games were found. Drop the installation folder for just one game, or select logs manually.",
             gameNotFound: "No supported game was identified. Open local files from Steam and drag all contents, including the game executable, or choose files manually.",
@@ -75,16 +75,16 @@
             viewManual: "Show the manual guide →", gameHeading: "Choose your game",
             uploadHeading: "Upload logs", chooseGame: "Choose a game", noGames: "No supported games configured yet", guideHeading: "File locations", demo: "Demo", demoOnly: "This game is a selection preview. File uploads are unavailable.",
             dropFiles: "Drop your logs and configuration files here", multipleFiles: "Select multiple files, or add them in separate steps.",
-            primaryFile: "Primary · Required", secondaryFile: "Secondary", secondaryNote: "(Only upload if the author requests it)",
-            missingRequired: "Add all primary logs before sending.", missingPrimary: "Missing primary logs: {names}.",
+            primaryFile: "Required", secondaryFile: "Secondary", secondaryNote: "(Only upload if the author requests it)",
+            missingRequired: "Please add the required logs first.", missingPrimary: "Please also add {names}.",
             chooseFiles: "Choose logs and settings", selectedFiles: "Selected files",
             nicknameHeading: "Enter your nickname",
             nicknameInputLabel: "Nickname:",
             nicknamePlaceholder: "Use a name that identifies you. If you're from Nexus Mods, enter your Nexus Mods ID.",
             send: "Send to {author}", sent: "Saved",
             limits: "Up to {file} per file and {total} per submission.",
-            preparing: "Checking files…", uploading: "Uploading… {percent}%", saving: "Files transferred. Confirming they are saved…",
-            success: "Saved successfully. {count} files received.", receiptHeading: "Submission ID", receiptHint: "Share this ID with the author so they can find your files.",
+            preparing: "Checking files…", uploading: "Uploading… {percent}%", saving: "Sending…",
+            success: "Files sent!", receiptHint: "Tell the author the nickname you used:",
             invalidNickname: "Enter a valid nickname (up to 60 characters).", noFiles: "Choose files to send first.",
             tooLarge: "Your files exceed the size limits shown on this page. Please choose again.", oneGame: "Submit files for one game at a time. Choose a specific game folder.",
             siteBusy: "The website is busy. Please try again later. Your selected files and nickname have been kept.",
@@ -95,7 +95,7 @@
             unknownResult: "The connection was interrupted. We cannot confirm whether your files were saved. Check with the author before retrying to avoid duplicates.",
             readFailed: "Could not read the selected files. Please select them again.", secureRequired: "Open this website over HTTPS to upload files.",
             log: "Log", config: "Settings", copy: "Copy path", copied: "Copied", copyFailed: "Could not copy. Select the path and copy it manually.",
-            scanning: "Checking {folder}… Nothing will be sent.", found: "Game and logs found",
+            scanning: "Checking {folder}… Nothing will be sent.", found: "Found your logs!",
             notFound: "No diagnostic files were found in {folder}. Check the locations in the manual guide.", folderOnly: "Drop the whole game folder, or select and drop all of its contents together.",
             folderUnsupported: "This browser cannot read dropped folders. Use the Choose folder button instead.",
             pickerUnsupported: "This browser cannot select folders. Choose files manually or update your browser.",
@@ -126,7 +126,7 @@
         route: "auto", manualGame: "", autoFiles: [], manualFiles: [], autoStatus: null, manualStatus: null,
         scanning: false, scanToken: 0, autoHelp: false,
         recognizedGame: null,
-        sending: false, submitted: false, uploadStatus: null, receipt: null, progress: null
+        sending: false, submitted: false, uploadStatus: null, receipt: null, receiptNickname: "", progress: null
     };
     const local = value => value[state.language] || value.en;
     const gameName = game => `${game.name.zh} / ${game.name.en}`;
@@ -252,13 +252,13 @@
         button.disabled = !$("nickname").value.trim() || state.sending || state.scanning || state.submitted || invalid === "demoOnly" || invalid === "missingRequired" || (state.route === "auto" && !state.recognizedGame);
         $("upload-limits").textContent = text("limits", { file: sizeText(config.maxFileBytes), total: sizeText(config.maxSubmissionBytes) });
         const status = state.uploadStatus;
-        $("upload-status").textContent = status ? text(status.key, status.args) : (invalid === "tooLarge" || invalid === "oneGame" ? text(invalid) : "");
+        $("upload-status").textContent = status ? (status.key === "success" ? "" : text(status.key, status.args)) : (invalid === "tooLarge" || invalid === "oneGame" ? text(invalid) : "");
         $("upload-status").classList.toggle("error", Boolean(status ? status.error : invalid === "tooLarge" || invalid === "oneGame"));
         $("upload-progress").hidden = !state.sending || state.progress === null;
         $("upload-progress").value = state.progress || 0;
         $("upload-progress").setAttribute("aria-label", text("uploading", { percent: state.progress || 0 }));
         $("upload-receipt").hidden = !state.receipt;
-        $("submission-id").textContent = state.receipt || "";
+        $("receipt-nickname").textContent = state.receiptNickname;
         $("nickname").disabled = state.sending;
         $("manual-game-choice").disabled = state.sending || !games.length;
         $("choose-files").disabled = state.sending;
@@ -267,7 +267,7 @@
         $("route-manual").disabled = state.sending;
     }
     function resetUpload() {
-        state.submitted = false; state.uploadStatus = null; state.receipt = null; state.progress = null;
+        state.submitted = false; state.uploadStatus = null; state.receipt = null; state.receiptNickname = ""; state.progress = null;
     }
     function uploadStatus(key, args = {}, error = false) {
         state.uploadStatus = { key, args, error }; renderUpload();
@@ -394,7 +394,9 @@
             $("selected-files").append(row);
         }
         const relevant = state.route === "manual" ? games.filter(game => game.id === state.manualGame) : games.filter(game => game.id === state.recognizedGame?.id);
-        const missing = relevant.flatMap(game => game.files.filter(item => (state.route !== "manual" || item.isPrimary) && !files.some(file => file.game.id === game.id && file.item.id === item.id)).map(item => local(item.name)));
+        const missing = relevant.flatMap(game => game.files.filter(item => (state.route !== "manual" || item.isPrimary) && !files.some(file => file.game.id === game.id && file.item.id === item.id)).map(item => state.route === "manual"
+            ? [...new Set(item.paths.map(path => path.replace(/\\/g, "/").split("/").pop()))].join(" / ")
+            : local(item.name)));
         $("missing-files").textContent = missing.length ? text(state.route === "manual" ? "missingPrimary" : "missing", { names: missing.join(state.language === "zh" ? "、" : ", ") }) : "";
         renderUpload();
     }
@@ -566,7 +568,7 @@
         const records = [...currentFiles()];
         const nickname = $("nickname").value.trim();
         clearAttention();
-        state.sending = true; state.progress = null; state.receipt = null;
+        state.sending = true; state.progress = null; state.receipt = null; state.receiptNickname = "";
         uploadStatus("preparing");
         try {
             const files = [];
@@ -592,7 +594,7 @@
                     let response;
                     try { response = JSON.parse(xhr.responseText); } catch { response = {}; }
                     if (xhr.status === 201 && response.saved === true && typeof response.submissionId === "string" && response.fileCount === records.length) {
-                        state.submitted = true; state.receipt = response.submissionId;
+                        state.submitted = true; state.receipt = response.submissionId; state.receiptNickname = nickname;
                         uploadStatus("success", { count: response.fileCount });
                     } else {
                         const knownErrors = ["tooLarge", "busy", "siteBusy", "storageFull", "storageFailed", "invalidSubmission", "invalidFile", "unsupportedGame", "incompleteUpload", "refreshPage", "invalidNickname", "missingRequired", "unknownResult"];

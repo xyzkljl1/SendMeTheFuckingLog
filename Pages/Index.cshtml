@@ -48,7 +48,7 @@
                 </button>
                 <button type="button" class="route-card" id="route-manual" aria-pressed="false" aria-controls="manual-panel">
                     <span class="route-symbol" aria-hidden="true">↥</span>
-                    <span class="route-text"><strong data-i18n="manualTitle">手动选择日志</strong><span data-i18n="manualDescription">跟随指示找到日志并上传</span></span>
+                    <span class="route-text"><strong data-i18n="manualTitle">手动选择日志</strong><span data-i18n="manualDescription">按下面的演示，找到文件后发送</span></span>
                     <span class="choice-dot" aria-hidden="true"></span>
                 </button>
             </div>
@@ -66,7 +66,7 @@
                                 <h3 data-i18n="dropFolder">把游戏文件夹里的内容拖到这里</h3>
                                 <button type="button" class="primary-button" id="choose-folder" data-i18n="chooseFolder">选择游戏文件夹</button>
                                 <input id="folder-input" type="file" webkitdirectory hidden />
-                                <span class="drop-note" data-i18n="folderPrivacy">不会上传所有文件，只会上传匹配到的日志和配置文件。</span>
+                                <span class="drop-note" data-i18n="folderPrivacy">只发送需要的日志和配置，不会上传整个游戏。</span>
                             </div>
                             <p id="folder-status" class="status" role="status" aria-live="polite"></p>
                             <div id="auto-selection-slot">
@@ -120,7 +120,7 @@
             </div>
             <progress id="upload-progress" max="100" value="0" hidden></progress>
             <p id="upload-status" class="status" role="status" aria-live="polite"></p>
-            <div id="upload-receipt" class="notice" hidden><strong data-i18n="receiptHeading">提交编号</strong><code id="submission-id"></code><p data-i18n="receiptHint">把这个编号告诉作者，方便找到你的文件。</p></div>
+            <div id="upload-receipt" class="notice" role="status" aria-live="polite" hidden><strong data-i18n="success">发送成功！</strong><p><span data-i18n="receiptHint">告诉作者，你填写的昵称是：</span> <strong id="receipt-nickname"></strong></p></div>
         </div>
     </main>
 </body>
