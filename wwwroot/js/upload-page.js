@@ -2,6 +2,7 @@
     "use strict";
     const config = JSON.parse(document.getElementById("page-configuration").textContent);
     const games = config.games;
+    const preloadedImages = new Set(config.preloadedImages || []);
     const rules = globalThis.diagnosticRules;
     const $ = id => document.getElementById(id);
     const messages = {
@@ -117,6 +118,18 @@
     const currentFiles = () => state.route === "auto" ? state.autoFiles : state.manualFiles;
     function renderGameCards(containerId, choices, group, selected, onChange) {
         const container = $(containerId);
+        const cardsKey = JSON.stringify(choices.map(({ game, value }) => [game.id, game.image, value]));
+        if (container.dataset.cardsKey === cardsKey) {
+            // Keep decoded images when switching routes/languages or updating selection.
+            for (const radio of container.querySelectorAll("input[type=radio]")) {
+                radio.checked = radio.value === selected;
+                radio.closest(".game-card").classList.toggle("selected", radio.checked);
+            }
+            for (const badge of container.querySelectorAll(".demo-badge")) badge.textContent = text("demo");
+            if (!choices.length) container.querySelector(".hint").textContent = text("noGames");
+            return;
+        }
+        container.dataset.cardsKey = cardsKey;
         container.replaceChildren();
         for (const { game, value } of choices) {
             const card = make("label", "game-card");
@@ -128,7 +141,9 @@
             cover.append(make("span", "game-cover-fallback", game.name.en.split(/\s+/).map(word => word[0]).join("").slice(0, 3)));
             if (game.image) {
                 const image = make("img", "");
-                image.alt = ""; image.width = 480; image.height = 270; image.loading = "lazy"; image.decoding = "async";
+                image.alt = ""; image.width = 480; image.height = 270;
+                image.loading = preloadedImages.has(game.image) ? "eager" : "lazy";
+                image.decoding = "async";
                 image.referrerPolicy = "no-referrer";
                 image.addEventListener("error", () => { image.hidden = true; });
                 image.src = game.image; cover.append(image);

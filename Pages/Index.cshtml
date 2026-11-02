@@ -10,6 +10,11 @@
     <meta name="color-scheme" content="light" />
     <meta name="request-verification-token" content="@Antiforgery.GetAndStoreTokens(HttpContext).RequestToken" />
     <title>发送诊断文件 · Mod Log Helper</title>
+    <link rel="preconnect" href="@Model.ImageOrigin" />
+    @foreach (var image in Model.PreloadedImages)
+    {
+        <link rel="preload" as="image" href="@image" referrerpolicy="no-referrer" />
+    }
     <link rel="stylesheet" href="~/css/site.css" />
     <script id="page-configuration" type="application/json">@Html.Raw(JsonSerializer.Serialize(Model.PageConfiguration, new JsonSerializerOptions(JsonSerializerDefaults.Web)))</script>
     <script src="~/js/diagnostic-rules.js" defer></script>

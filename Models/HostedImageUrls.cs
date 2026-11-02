@@ -1,10 +1,14 @@
+using System.Security.Cryptography;
+
 namespace SendMeTheFuckingLog.Models;
 
 public sealed class HostedImageUrls
 {
     private readonly Uri origin;
+    private readonly string imageRoot;
+    public string Origin => origin.GetLeftPart(UriPartial.Authority);
 
-    public HostedImageUrls(IConfiguration configuration)
+    public HostedImageUrls(IConfiguration configuration, IWebHostEnvironment environment)
     {
         var value = configuration["ImageHosting:BaseUrl"];
         if (string.IsNullOrWhiteSpace(value) || value.Any(char.IsControl) || value.Contains('\\')
@@ -14,6 +18,7 @@ public sealed class HostedImageUrls
             || uri.AbsolutePath != "/")
             throw new InvalidOperationException("ImageHosting:BaseUrl must be an HTTPS origin without credentials, a path, query or fragment.");
         origin = uri;
+        imageRoot = Path.Combine(environment.WebRootPath, "images");
     }
 
     public string Resolve(string path)
@@ -24,6 +29,14 @@ public sealed class HostedImageUrls
             || !new[] { ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif" }
                 .Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
             throw new InvalidOperationException("Image paths must be relative to ImageHosting:BaseUrl, for example games/cover.gif.");
-        return new Uri(origin, string.Join('/', path.Split('/').Select(Uri.EscapeDataString))).AbsoluteUri;
+        var url = new Uri(origin, string.Join('/', path.Split('/').Select(Uri.EscapeDataString))).AbsoluteUri;
+        var file = Path.Combine(imageRoot, Path.Combine(path.Split('/')));
+        if (File.Exists(file))
+        {
+            // GameCatalog resolves once at startup. Stream the hash without retaining image bytes.
+            using var stream = File.OpenRead(file);
+            url += "?v=" + Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant();
+        }
+        return url;
     }
 }
