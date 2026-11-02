@@ -16,6 +16,7 @@ public sealed class IndexModel(GameCatalog catalog, IOptions<UploadPageOptions> 
     {
         authorName = options.Value.AuthorName, games = catalog.Games,
         recognition = catalog.Recognition,
+        automaticGuideImages = catalog.AutomaticGuideImages,
         preloadedImages = PreloadedImages,
         maxFileBytes = limits.FileBytes, maxSubmissionBytes = limits.SubmissionBytes
     };

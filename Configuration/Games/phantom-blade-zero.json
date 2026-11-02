@@ -6,7 +6,8 @@
   "instructions": [
     {
       "zh": "打开游戏安装文件夹。如果通过 Steam 安装，可在库中右键点击游戏，选择「管理」→「浏览本地文件」。",
-      "en": "Open the game's installation folder. For a Steam installation, right-click the game in your library and choose Manage → Browse local files."
+      "en": "Open the game's installation folder. For a Steam installation, right-click the game in your library and choose Manage → Browse local files.",
+      "images": ["guides/steam-open-phantom-blade-zero-demo-{lang}.gif"]
     },
     {
       "zh": "在游戏安装文件夹内，依次打开 platform → steam → ue4ss。",

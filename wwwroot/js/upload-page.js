@@ -9,6 +9,8 @@
     const messages = {
         zh: {
             title: "上传日志",
+            guideImageOpen: "点击放大", guideImageUnavailable: "演示图片暂时无法加载，请按文字指引操作。",
+            automaticGuideAlt: "Steam 操作示例：右键你的游戏，选择管理 → 浏览本地文件。",
             recipientBefore: "文件将交给作者", recipientAfter: "，用于排查 Mod 问题。",
             chooseRoute: "选择方式", autoTitle: "自动选择日志", autoDescription: "上传整个文件夹，自动查找日志",
             manualTitle: "手动选择日志", manualDescription: "跟随指示找到日志并上传",
@@ -53,6 +55,8 @@
         },
         en: {
             title: "Upload logs",
+            guideImageOpen: "View full size", guideImageUnavailable: "The guide image could not load. Please follow the written steps.",
+            automaticGuideAlt: "Steam example: right-click your game and choose Manage → Browse local files.",
             recipientBefore: "Files will be sent to the author", recipientAfter: " to troubleshoot your mod issue.",
             chooseRoute: "Choose a method", autoTitle: "Select logs automatically", autoDescription: "Upload the entire folder to find logs automatically",
             manualTitle: "Select logs manually", manualDescription: "Follow the instructions to find and upload logs",
@@ -232,14 +236,48 @@
         $("confirm-game").hidden = Boolean(confirmed);
         renderUpload();
     }
+    function renderGuideImages(container, images, description) {
+        const urls = images.map(local);
+        const key = JSON.stringify([state.language, urls]);
+        container.hidden = !urls.length;
+        if (container.dataset.imagesKey === key) return;
+        container.dataset.imagesKey = key;
+        container.replaceChildren();
+        for (const url of urls) {
+            const figure = make("figure", "guide-image");
+            const link = make("a", "guide-image-link");
+            link.href = url; link.target = "_blank"; link.rel = "noopener noreferrer";
+            link.setAttribute("aria-label", `${description} — ${text("guideImageOpen")}`);
+            const image = make("img", "");
+            image.alt = description; image.loading = "lazy"; image.decoding = "async";
+            image.referrerPolicy = "no-referrer";
+            const error = make("p", "hint", text("guideImageUnavailable"));
+            error.hidden = true;
+            image.addEventListener("error", () => { link.hidden = true; error.hidden = false; });
+            image.src = url; link.append(image);
+            const caption = make("span", "guide-image-caption", text("guideImageOpen"));
+            link.append(caption); figure.append(link, error); container.append(figure);
+        }
+    }
     function renderGuide() {
         const game = games.find(game => game.id === state.manualGame);
         $("file-drop").hidden = !game || Boolean(game.isDemo);
         $("game-guide").hidden = !game;
-        $("guide-steps").replaceChildren();
         $("expected-files").replaceChildren();
+        const steps = $("guide-steps");
+        const guideKey = JSON.stringify([game?.id, state.language]);
+        if (steps.dataset.guideKey !== guideKey) {
+            steps.dataset.guideKey = guideKey;
+            steps.replaceChildren();
+            for (const instruction of game?.instructions || []) {
+                const step = make("li", "guide-step");
+                step.append(make("p", "guide-step-text", local(instruction)));
+                const media = make("div", "guide-images");
+                renderGuideImages(media, instruction.imageUrls || [], local(instruction));
+                step.append(media); steps.append(step);
+            }
+        }
         if (!game) return;
-        for (const instruction of game.instructions) $("guide-steps").append(make("li", "", local(instruction)));
         for (const item of game.files) {
             const row = make("div", "expected-file");
             const heading = make("div", "expected-file-heading");
@@ -296,6 +334,7 @@
         document.querySelectorAll("[data-language]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.language === state.language)));
         $("author-name").textContent = config.authorName;
         $("nickname").placeholder = text("nicknamePlaceholder");
+        renderGuideImages($("automatic-guide"), config.automaticGuideImages || [], text("automaticGuideAlt"));
         const supported = games.filter(game => !game.isDemo);
         $("supported-games").textContent = supported.length ? supported.map(gameName).join(" · ") : text("noGames");
         renderGameCards("game-cards", games.map(game => ({ game, value: game.id })), "manual-game", state.manualGame, value => {

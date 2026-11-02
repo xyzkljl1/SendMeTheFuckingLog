@@ -1,16 +1,22 @@
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 
 namespace SendMeTheFuckingLog.Models;
 
 public sealed class UploadPageOptions
 {
     public string AuthorName { get; set; } = "xyzkljl1";
+    public string[] AutomaticGuideImages { get; set; } = [];
 }
 
 public sealed record LocalizedText(string Zh, string En);
+public sealed record GuideInstruction(string Zh, string En, string[]? Images = null)
+{
+    public LocalizedText[] ImageUrls { get; init; } = [];
+}
 public sealed record DiagnosticFile(string Id, LocalizedText Name, string Kind, string[] Paths);
 public sealed record SupportedGame(
-    string Id, LocalizedText Name, LocalizedText[] Instructions, DiagnosticFile[] Files, string[] ExecutablePaths,
+    string Id, LocalizedText Name, GuideInstruction[] Instructions, DiagnosticFile[] Files, string[] ExecutablePaths,
     string? Image = null, bool IsDemo = false);
 public sealed record GameRecognition(Dictionary<string, string> Ue, Dictionary<string, string> Re);
 
@@ -18,12 +24,14 @@ public sealed class GameCatalog
 {
     public IReadOnlyList<SupportedGame> Games { get; }
     public GameRecognition Recognition { get; }
+    public LocalizedText[] AutomaticGuideImages { get; }
 
-    public GameCatalog(IWebHostEnvironment environment, HostedImageUrls images)
+    public GameCatalog(IWebHostEnvironment environment, HostedImageUrls images, IOptions<UploadPageOptions> uploadPage)
     {
         var directory = Path.Combine(environment.ContentRootPath, "Configuration", "Games");
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         var games = new List<SupportedGame>();
+        AutomaticGuideImages = (uploadPage.Value.AutomaticGuideImages ?? []).Select(images.ResolveLocalized).ToArray();
 
         foreach (var path in Directory.EnumerateFiles(directory, "*.json").Order(StringComparer.Ordinal))
         {
@@ -32,7 +40,8 @@ public sealed class GameCatalog
             if (string.IsNullOrWhiteSpace(game.Id) || game.Id.Length > 80
                 || !System.Text.RegularExpressions.Regex.IsMatch(game.Id, "^[a-z0-9]+(?:-[a-z0-9]+)*$")
                 || !HasBothLanguages(game.Name)
-                || game.Instructions is not { Length: > 0 } || game.Instructions.Any(text => !HasBothLanguages(text))
+                || game.Instructions is not { Length: > 0 } || game.Instructions.Any(text =>
+                    text is null || string.IsNullOrWhiteSpace(text.Zh) || string.IsNullOrWhiteSpace(text.En))
                 || game.ExecutablePaths is null
                 || game.ExecutablePaths.Any(value => !IsRelativePath(value) || !value.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                 || game.Files is null || (!game.IsDemo && game.Files.Length == 0)
@@ -42,7 +51,14 @@ public sealed class GameCatalog
                 || game.Files.Select(file => file.Id).Distinct(StringComparer.Ordinal).Count() != game.Files.Length
                 || games.Any(existing => existing.Id == game.Id))
                 throw new InvalidOperationException($"Invalid game configuration: {Path.GetFileName(path)}");
-            games.Add(game with { Image = game.Image is null ? null : images.Resolve(game.Image) });
+            games.Add(game with
+            {
+                Image = game.Image is null ? null : images.Resolve(game.Image),
+                Instructions = game.Instructions.Select(instruction => instruction with
+                {
+                    ImageUrls = (instruction.Images ?? []).Select(images.ResolveLocalized).ToArray()
+                }).ToArray()
+            });
         }
 
         Recognition = JsonSerializer.Deserialize<GameRecognition>(File.ReadAllText(

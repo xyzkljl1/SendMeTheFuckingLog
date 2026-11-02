@@ -21,10 +21,21 @@ public sealed class HostedImageUrls
         imageRoot = Path.Combine(environment.WebRootPath, "images");
     }
 
+    public LocalizedText ResolveLocalized(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            throw new InvalidOperationException("Guide images need a relative image path, optionally containing {lang}.");
+        // A single template selects each language before content hashing.
+        var zh = Resolve(path.Replace("{lang}", "zh", StringComparison.Ordinal));
+        var en = path.Contains("{lang}", StringComparison.Ordinal)
+            ? Resolve(path.Replace("{lang}", "en", StringComparison.Ordinal)) : zh;
+        return new(zh, en);
+    }
+
     public string Resolve(string path)
     {
         if (string.IsNullOrWhiteSpace(path) || path.Any(char.IsControl)
-            || path.IndexOfAny(['\\', ':', '?', '#', '%']) >= 0
+            || path.IndexOfAny(['\\', ':', '?', '#', '%', '{', '}']) >= 0
             || path.Split('/').Any(part => part is "" or "." or "..")
             || !new[] { ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif" }
                 .Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
