@@ -19,7 +19,7 @@ public sealed class StatusModel(RequestCounter counter, SubmissionStore store, T
     public IEnumerable<SubmissionFolder> Folders => Storage?.Folders.Skip((Number - 1) * 50).Take(50) ?? [];
     public DateTimeOffset CheckedAt { get; } = DateTimeOffset.UtcNow;
     public string T(string zh, string en) => English ? en : zh;
-    public string Link(int number, bool? english = null) => $"/Status?lang={((english ?? English) ? "en" : "zh")}&number={number}";
+    public string Link(int number, bool? english = null) => $"/sTaTus?lang={((english ?? English) ? "en" : "zh")}&number={number}";
     public static string MiB(long bytes) => (bytes / 1048576d).ToString("N2", CultureInfo.InvariantCulture) + " MiB";
     public static string GB(long bytes) => (bytes / 1_000_000_000d).ToString("N3", CultureInfo.InvariantCulture) + " GB";
 

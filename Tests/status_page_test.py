@@ -65,14 +65,22 @@ def main():
             pending = data / (folder.replace("aaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbb") + ".uploading")
             pending.mkdir()
             (pending / "unfinished.log").write_text("PRIVATE_UPLOAD_CONTENT", encoding="utf-8")
-            status, headers, html = request("/Status?lang=en")
+            status, headers, html = request("/sTaTus?lang=en")
             assert status == 200 and headers["Cache-Control"] == "no-store"
             assert "Unknown" in html and "No host monitoring data received" in html
             assert re.search(re.escape(folder) + r"</code></td><td>2</td>", html)
             assert "private-name.log" not in html and "PRIVATE_UPLOAD_CONTENT" not in html
             assert ".uploading" not in html and "submission.json" not in html
             assert html.count('class="folder-name"') == 50
-            second = request("/Status?lang=en&number=2")[2]
+            assert 'href="/sTaTus?' in html and 'href="/Status' not in html
+            assert request("/sTaTus/?lang=en")[0] == 200
+            homepage = request("/")[2]
+            assert not re.search(r'href="/status', homepage, re.IGNORECASE)
+            for alias in ("/Status", "/status", "/STATUS", "/Status/"):
+                for method in ("GET", "HEAD"):
+                    code, _, body = request(alias + "?lang=en", method)
+                    assert code == 404 and "Site-wide request limits" not in body
+            second = request("/sTaTus?lang=en&number=2")[2]
             assert second.count('class="folder-name"') == 1
             (app / "monitor-status").mkdir()
             state_file = app / "monitor-status" / "traffic.json"
@@ -81,23 +89,24 @@ def main():
                      "DailyLimitBytes": 25_000_000_000, "MonthlyLimitBytes": 900_000_000_000,
                      "Day": "2026-11-02", "Month": "2026-11"}
             state_file.write_text(json.dumps(state), encoding="utf-8")
-            html = request("/Status?lang=en")[2]
+            html = request("/sTaTus?lang=en")[2]
             assert "Recent check successful" in html and "1.000 GB / 25.000 GB" in html
             state["ObservedAt"] = (datetime.now(timezone.utc) - timedelta(minutes=4)).isoformat()
             state_file.write_text(json.dumps(state), encoding="utf-8")
-            assert "Stale data; monitor status unknown" in request("/Status?lang=en")[2]
+            assert "Stale data; monitor status unknown" in request("/sTaTus?lang=en")[2]
             state["Healthy"] = False
             state_file.write_text(json.dumps(state), encoding="utf-8")
-            assert "Last check failed" in request("/Status?lang=en")[2]
+            assert "Last check failed" in request("/sTaTus?lang=en")[2]
             state_file.write_text("broken snapshot", encoding="utf-8")
-            assert "Unable to read monitor data" in request("/Status?lang=en")[2]
+            assert "Unable to read monitor data" in request("/sTaTus?lang=en")[2]
             for _ in range(25):
                 request("/missing")
             assert request("/")[0] == 429
-            status, headers, html = request("/Status?lang=en")
+            status, headers, html = request("/sTaTus?lang=en")
             assert status == 429 and "Limit reached" in html and folder in html
-            assert request("/Status?lang=en", "HEAD")[0] == 429
-            assert request("/Status/not-a-page")[0] == 429
+            assert request("/sTaTus?lang=en", "HEAD")[0] == 429
+            assert request("/Status?lang=en")[0] == 404
+            assert request("/sTaTus/not-a-page")[0] == 429
             assert json.loads(request("/api/uploads", "POST")[2])["error"] == "siteBusy"
             print("PASS: public status, folder counts and pagination, privacy, absent/stale/failed monitoring, status rendering during 429.")
         finally:

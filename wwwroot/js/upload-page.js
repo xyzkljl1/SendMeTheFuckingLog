@@ -10,8 +10,8 @@
         zh: {
             title: "上传日志",
             recipientBefore: "文件将交给作者", recipientAfter: "，用于排查 Mod 问题。",
-            chooseRoute: "选择方式", autoTitle: "自动选择日志", autoDescription: "从游戏文件夹中查找",
-            manualTitle: "手动选择日志", manualDescription: "按路径指引选择文件",
+            chooseRoute: "选择方式", autoTitle: "自动选择日志", autoDescription: "上传整个文件夹，自动查找日志",
+            manualTitle: "手动选择日志", manualDescription: "跟随指示找到日志并上传",
             folderHeading: "打开游戏本地文件", folderDescription: "在 Steam 中右键游戏，选择「管理 → 浏览本地文件」。在打开的窗口按 Ctrl+A 全选，把所有内容一起拖到下面。",
             dropFolder: "把游戏文件夹里的内容拖到这里", oneFolder: "也可以拖入整个游戏文件夹。", chooseFolder: "选择游戏文件夹",
             folderPrivacy: "仅查找日志和配置，不会上传游戏程序。", supported: "当前支持：",
@@ -54,8 +54,8 @@
         en: {
             title: "Upload logs",
             recipientBefore: "Files will be sent to the author", recipientAfter: " to troubleshoot your mod issue.",
-            chooseRoute: "Choose a method", autoTitle: "Select logs automatically", autoDescription: "Find files in your game folder",
-            manualTitle: "Select logs manually", manualDescription: "Choose files using the path guide",
+            chooseRoute: "Choose a method", autoTitle: "Select logs automatically", autoDescription: "Upload the entire folder to find logs automatically",
+            manualTitle: "Select logs manually", manualDescription: "Follow the instructions to find and upload logs",
             folderHeading: "Open your game's local files", folderDescription: "In Steam, right-click the game and choose Manage → Browse local files. Press Ctrl+A in that window, then drag everything below.",
             dropFolder: "Drop the contents of your game folder here", oneFolder: "You can also drop the whole game folder.", chooseFolder: "Choose game folder",
             folderPrivacy: "Only logs and settings are selected. Game executables are never uploaded.", supported: "Currently supported: ",

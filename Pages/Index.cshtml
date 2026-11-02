@@ -22,10 +22,6 @@
 </head>
 <body>
     <header class="site-header">
-        <a class="brand" href="./" aria-label="Mod Log Helper">
-            <span class="brand-icon" aria-hidden="true">≡</span><span>Mod Log Helper</span>
-        </a>
-        <a href="/Status">状态 / Status</a>
         <nav class="language-switch" aria-label="Language / 语言">
             <button type="button" data-language="zh" lang="zh-CN" aria-pressed="true">中文</button>
             <button type="button" data-language="en" lang="en" aria-pressed="false">English</button>
@@ -45,12 +41,12 @@
             <div class="route-options" role="group" aria-labelledby="route-title">
                 <button type="button" class="route-card selected" id="route-auto" aria-pressed="true" aria-controls="auto-panel">
                     <span class="route-symbol" aria-hidden="true">⌕</span>
-                    <span class="route-text"><strong data-i18n="autoTitle">自动选择日志</strong><span data-i18n="autoDescription">从游戏文件夹中查找</span></span>
+                    <span class="route-text"><strong data-i18n="autoTitle">自动选择日志</strong><span data-i18n="autoDescription">上传整个文件夹，自动查找日志</span></span>
                     <span class="choice-dot" aria-hidden="true"></span>
                 </button>
                 <button type="button" class="route-card" id="route-manual" aria-pressed="false" aria-controls="manual-panel">
                     <span class="route-symbol" aria-hidden="true">↥</span>
-                    <span class="route-text"><strong data-i18n="manualTitle">手动选择日志</strong><span data-i18n="manualDescription">按路径指引选择文件</span></span>
+                    <span class="route-text"><strong data-i18n="manualTitle">手动选择日志</strong><span data-i18n="manualDescription">跟随指示找到日志并上传</span></span>
                     <span class="choice-dot" aria-hidden="true"></span>
                 </button>
             </div>

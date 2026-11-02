@@ -51,9 +51,17 @@ try
         // ACME must remain reachable even when the public request quota is exhausted.
         if (await https.HandleChallengeAsync(context)) return;
         var status = requestCounter.Admit();
+        var statusPath = context.Request.Path.Equals("/sTaTus", StringComparison.Ordinal)
+            || context.Request.Path.Equals("/sTaTus/", StringComparison.Ordinal);
+        // Razor Pages routing ignores case; explicitly reject other spellings of this endpoint.
+        if (!statusPath && (context.Request.Path.Equals("/sTaTus", StringComparison.OrdinalIgnoreCase)
+                || context.Request.Path.Equals("/sTaTus/", StringComparison.OrdinalIgnoreCase)))
+        {
+            context.Response.StatusCode = 404;
+            return;
+        }
         var statusPage = (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method))
-            && (context.Request.Path.Equals("/Status", StringComparison.OrdinalIgnoreCase)
-                || context.Request.Path.Equals("/Status/", StringComparison.OrdinalIgnoreCase));
+            && statusPath;
         if (statusPage)
         {
             context.Response.StatusCode = status;
