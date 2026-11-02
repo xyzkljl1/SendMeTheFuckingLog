@@ -188,6 +188,9 @@ def reset_request_counts():
 
 def cleanup_images(current_id):
     # Never use system prune, volume prune, or force removal.
+    digest_pattern = re.escape(IMAGE) + r"@sha256:[a-f0-9]{64}"
+    # Containerd-backed Docker can also expose digest references in RepoTags.
+    reference_pattern = re.escape(IMAGE) + r"(?::[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}|@sha256:[a-f0-9]{64})"
     candidates = output("docker", "image", "ls", "-aq", "--no-trunc",
                         "--filter", f"label={APP_LABEL}={APP}").splitlines()
     for image_id in sorted(set(candidates)):
@@ -197,10 +200,10 @@ def cleanup_images(current_id):
         labels = info["Config"].get("Labels") or {}
         tags = info.get("RepoTags") or []
         digests = info.get("RepoDigests") or []
-        if (labels.get("org.opencontainers.image.source") != SOURCE
-                or any(not tag.startswith(IMAGE + ":") for tag in tags)
-                or any(not digest.startswith(IMAGE + "@") for digest in digests)):
-            raise RuntimeError("Old image has unexpected ownership/references; refusing to delete it.")
+        if (labels.get(APP_LABEL) != APP or labels.get("org.opencontainers.image.source") != SOURCE
+                or any(not re.fullmatch(reference_pattern, tag) for tag in tags)
+                or any(not re.fullmatch(digest_pattern, digest) for digest in digests)):
+            raise RuntimeError(f"Old image {image_id} has unexpected ownership/references; refusing to delete it.")
         if output("docker", "ps", "-aq", "--filter", f"ancestor={image_id}"):
             raise RuntimeError("Old project image is still referenced by a container; cleanup incomplete.")
         for reference in tags:

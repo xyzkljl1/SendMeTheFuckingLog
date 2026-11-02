@@ -72,7 +72,7 @@ class RemoteTests(unittest.TestCase):
         remote.check_container(container, "15")
 
     def test_old_image_used_by_any_container_is_never_force_deleted(self):
-        info = {"Config": {"Labels": {"org.opencontainers.image.source": remote.SOURCE}},
+        info = {"Config": {"Labels": {remote.APP_LABEL: remote.APP, "org.opencontainers.image.source": remote.SOURCE}},
                 "RepoTags": [], "RepoDigests": [remote.IMAGE + "@" + DIGEST]}
         import json
         with patch.object(remote, "output", side_effect=["old", json.dumps([info]), "other-container"]), \
@@ -83,7 +83,7 @@ class RemoteTests(unittest.TestCase):
 
     def test_image_with_foreign_tag_is_not_deleted(self):
         import json
-        info = {"Config": {"Labels": {"org.opencontainers.image.source": remote.SOURCE}},
+        info = {"Config": {"Labels": {remote.APP_LABEL: remote.APP, "org.opencontainers.image.source": remote.SOURCE}},
                 "RepoTags": ["another-project:latest"], "RepoDigests": []}
         with patch.object(remote, "output", side_effect=["old", json.dumps([info])]), \
                 patch.object(remote, "run") as run:
@@ -93,12 +93,63 @@ class RemoteTests(unittest.TestCase):
 
     def test_cleanup_only_removes_old_project_image(self):
         import json
-        info = {"Config": {"Labels": {"org.opencontainers.image.source": remote.SOURCE}},
+        info = {"Config": {"Labels": {remote.APP_LABEL: remote.APP, "org.opencontainers.image.source": remote.SOURCE}},
                 "RepoTags": [], "RepoDigests": [remote.IMAGE + "@" + DIGEST]}
         with patch.object(remote, "output", side_effect=["current\nold", json.dumps([info]), "", "current\nold", "current"]), \
                 patch.object(remote, "run") as run:
             remote.cleanup_images("current")
             run.assert_called_once_with("docker", "image", "rm", "old")
+
+    def test_cleanup_accepts_digest_in_repo_tags_and_preserves_current_image(self):
+        digest = remote.IMAGE + "@" + DIGEST
+        for reference in (digest, remote.IMAGE + ":sha-abc-run-12-1"):
+            for remaining in ("current", "current\nold"):
+                with self.subTest(reference=reference, remaining=remaining):
+                    info = {"Config": {"Labels": {remote.APP_LABEL: remote.APP,
+                            "org.opencontainers.image.source": remote.SOURCE}},
+                            "RepoTags": [reference], "RepoDigests": [digest]}
+                    with patch.object(remote, "output", side_effect=[
+                            "current\nold", json.dumps([info]), "", remaining, "current"]), \
+                            patch.object(remote, "run") as run:
+                        remote.cleanup_images("current")
+                        expected = [("docker", "image", "rm", reference)]
+                        if remaining.endswith("\nold"):
+                            expected.append(("docker", "image", "rm", "old"))
+                        self.assertEqual([call.args for call in run.call_args_list], expected)
+
+    def test_cleanup_rejects_foreign_or_malformed_references_before_any_removal(self):
+        invalid = ["ghcr.io/another/project@" + DIGEST,
+                   remote.IMAGE + "-other:latest", remote.IMAGE + "/other:latest",
+                   remote.IMAGE + ":", remote.IMAGE + ":bad/tag",
+                   remote.IMAGE + "@sha256:abc", remote.IMAGE + "@sha256:" + "g" * 64,
+                   remote.IMAGE + "@sha512:" + "a" * 64,
+                   remote.IMAGE + "@" + DIGEST + "\n"]
+        for field in ("RepoTags", "RepoDigests"):
+            for reference in invalid + ([remote.IMAGE + ":latest"] if field == "RepoDigests" else []):
+                with self.subTest(field=field, reference=reference):
+                    info = {"Config": {"Labels": {remote.APP_LABEL: remote.APP,
+                            "org.opencontainers.image.source": remote.SOURCE}},
+                            "RepoTags": [remote.IMAGE + ":valid"],
+                            "RepoDigests": [remote.IMAGE + "@" + DIGEST]}
+                    info[field].append(reference)
+                    with patch.object(remote, "output", side_effect=["old", json.dumps([info])]), \
+                            patch.object(remote, "run") as run:
+                        with self.assertRaises(RuntimeError):
+                            remote.cleanup_images("current")
+                        run.assert_not_called()
+
+    def test_cleanup_rechecks_both_ownership_labels(self):
+        good = {remote.APP_LABEL: remote.APP, "org.opencontainers.image.source": remote.SOURCE}
+        for label in good:
+            for value in (None, "another-project"):
+                with self.subTest(label=label, value=value):
+                    info = {"Config": {"Labels": {**good, label: value}},
+                            "RepoTags": [remote.IMAGE + "@" + DIGEST], "RepoDigests": []}
+                    with patch.object(remote, "output", side_effect=["old", json.dumps([info])]), \
+                            patch.object(remote, "run") as run:
+                        with self.assertRaises(RuntimeError):
+                            remote.cleanup_images("current")
+                        run.assert_not_called()
 
     def test_failed_container_start_never_cleans_old_images(self):
         self.exercise_deployment(start_fails=True)
