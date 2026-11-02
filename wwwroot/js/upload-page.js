@@ -12,9 +12,10 @@
             guideImageOpen: "点击放大", guideImageUnavailable: "演示图片暂时无法加载，请按文字指引操作。",
             automaticGuideAlt: "Steam 操作示例：右键你的游戏，选择管理 → 浏览本地文件。",
             recipientBefore: "文件将交给作者", recipientAfter: "，用于排查 Mod 问题。",
-            chooseRoute: "选择方式", autoTitle: "自动选择日志", autoDescription: "上传整个文件夹，自动查找日志",
+            chooseRoute: "选择方式", autoTitle: "自动选择日志", autoDescription: "选择游戏文件夹，自动查找日志",
             manualTitle: "手动选择日志", manualDescription: "跟随指示找到日志并上传",
-            folderHeading: "打开游戏本地文件", folderDescription: "在 Steam 中右键游戏，选择「管理 → 浏览本地文件」。在打开的窗口按 Ctrl+A 全选，把所有内容一起拖到下面。",
+            folderHeading: "打开游戏本地文件", folderDescription: "在 Steam 中右键游戏，选择「管理 → 浏览本地文件」。",
+            dragInstruction: "在刚打开的窗口按 Ctrl+A 全选，再把选中的内容一起拖入此处。",
             dropFolder: "把游戏文件夹里的内容拖到这里", oneFolder: "也可以拖入整个游戏文件夹。", chooseFolder: "选择游戏文件夹",
             folderPrivacy: "仅查找日志和配置，不会上传游戏程序。", supported: "当前支持：",
             identifying: "正在识别游戏… 文件不会发送。", droppedContents: "拖入的内容",
@@ -58,9 +59,10 @@
             guideImageOpen: "View full size", guideImageUnavailable: "The guide image could not load. Please follow the written steps.",
             automaticGuideAlt: "Steam example: right-click your game and choose Manage → Browse local files.",
             recipientBefore: "Files will be sent to the author", recipientAfter: " to troubleshoot your mod issue.",
-            chooseRoute: "Choose a method", autoTitle: "Select logs automatically", autoDescription: "Upload the entire folder to find logs automatically",
+            chooseRoute: "Choose a method", autoTitle: "Select logs automatically", autoDescription: "Choose your game folder to find logs automatically",
             manualTitle: "Select logs manually", manualDescription: "Follow the instructions to find and upload logs",
-            folderHeading: "Open your game's local files", folderDescription: "In Steam, right-click the game and choose Manage → Browse local files. Press Ctrl+A in that window, then drag everything below.",
+            folderHeading: "Open your game's local files", folderDescription: "In Steam, right-click the game and choose Manage → Browse local files.",
+            dragInstruction: "Press Ctrl+A in the window you just opened, then drag all selected items here.",
             dropFolder: "Drop the contents of your game folder here", oneFolder: "You can also drop the whole game folder.", chooseFolder: "Choose game folder",
             folderPrivacy: "Only logs and settings are selected. Game executables are never uploaded.", supported: "Currently supported: ",
             identifying: "Identifying your game… Nothing will be sent.", droppedContents: "the dropped items",
@@ -245,18 +247,19 @@
         container.replaceChildren();
         for (const url of urls) {
             const figure = make("figure", "guide-image");
+            const frame = make("span", "guide-image-frame");
             const link = make("a", "guide-image-link");
             link.href = url; link.target = "_blank"; link.rel = "noopener noreferrer";
             link.setAttribute("aria-label", `${description} — ${text("guideImageOpen")}`);
             const image = make("img", "");
             image.alt = description; image.loading = "lazy"; image.decoding = "async";
             image.referrerPolicy = "no-referrer";
-            const error = make("p", "hint", text("guideImageUnavailable"));
+            const error = make("span", "guide-image-error", text("guideImageUnavailable"));
             error.hidden = true;
-            image.addEventListener("error", () => { link.hidden = true; error.hidden = false; });
-            image.src = url; link.append(image);
+            image.addEventListener("error", () => { image.hidden = true; error.hidden = false; caption.style.visibility = "hidden"; link.removeAttribute("href"); });
+            image.src = url; frame.append(image, error); link.append(frame);
             const caption = make("span", "guide-image-caption", text("guideImageOpen"));
-            link.append(caption); figure.append(link, error); container.append(figure);
+            link.append(caption); figure.append(link); container.append(figure);
         }
     }
     function renderGuide() {

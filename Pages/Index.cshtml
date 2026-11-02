@@ -41,7 +41,7 @@
             <div class="route-options" role="group" aria-labelledby="route-title">
                 <button type="button" class="route-card selected" id="route-auto" aria-pressed="true" aria-controls="auto-panel">
                     <span class="route-symbol" aria-hidden="true">⌕</span>
-                    <span class="route-text"><strong data-i18n="autoTitle">自动选择日志</strong><span data-i18n="autoDescription">上传整个文件夹，自动查找日志</span></span>
+                    <span class="route-text"><strong data-i18n="autoTitle">自动选择日志</strong><span data-i18n="autoDescription">选择游戏文件夹，自动查找日志</span></span>
                     <span class="choice-dot" aria-hidden="true"></span>
                 </button>
                 <button type="button" class="route-card" id="route-manual" aria-pressed="false" aria-controls="manual-panel">
@@ -55,17 +55,22 @@
         <div class="workspace">
             <section id="auto-panel" aria-labelledby="auto-heading">
                 <div id="automatic-source">
-                    <div class="step-heading"><span class="step-number">1</span><div><h2 id="auto-heading" data-i18n="folderHeading">打开游戏本地文件</h2><p data-i18n="folderDescription">在 Steam 中右键游戏，选择「管理 → 浏览本地文件」。在打开的窗口按 Ctrl+A 全选，把所有内容一起拖到下面。</p></div></div>
-                    <div id="automatic-guide" class="guide-images" hidden></div>
-                    <div id="folder-drop" class="drop-zone">
-                        <span class="folder-icon" aria-hidden="true"></span>
-                        <h3 data-i18n="dropFolder">把游戏文件夹里的内容拖到这里</h3>
-                        <p data-i18n="oneFolder">也可以拖入整个游戏文件夹。</p>
-                        <button type="button" class="primary-button" id="choose-folder" data-i18n="chooseFolder">选择游戏文件夹</button>
-                        <input id="folder-input" type="file" webkitdirectory hidden />
-                        <span class="drop-note" data-i18n="folderPrivacy">仅查找日志和配置，不会上传游戏程序。</span>
+                    <div class="step-heading"><span class="step-number">1</span><div><h2 id="auto-heading" data-i18n="folderHeading">打开游戏本地文件</h2><p data-i18n="folderDescription">在 Steam 中右键游戏，选择「管理 → 浏览本地文件」。</p></div></div>
+                    <div class="guide-layout">
+                        <div id="automatic-guide" class="guide-images" hidden></div>
+                        <div class="guide-actions">
+                            <div id="folder-drop" class="drop-zone">
+                                <span class="folder-icon" aria-hidden="true"></span>
+                                <h3 data-i18n="dropFolder">把游戏文件夹里的内容拖到这里</h3>
+                                <p class="drag-instruction" data-i18n="dragInstruction">在刚打开的窗口按 Ctrl+A 全选，再把选中的内容一起拖入此处。</p>
+                                <p data-i18n="oneFolder">也可以拖入整个游戏文件夹。</p>
+                                <button type="button" class="primary-button" id="choose-folder" data-i18n="chooseFolder">选择游戏文件夹</button>
+                                <input id="folder-input" type="file" webkitdirectory hidden />
+                                <span class="drop-note" data-i18n="folderPrivacy">仅查找日志和配置，不会上传游戏程序。</span>
+                            </div>
+                            <p class="supported-line"><span data-i18n="supported">当前支持：</span><span id="supported-games"></span></p>
+                        </div>
                     </div>
-                    <p class="supported-line"><span data-i18n="supported">当前支持：</span><span id="supported-games"></span></p>
                 </div>
                 <p id="folder-status" class="status" role="status" aria-live="polite"></p>
                 <button type="button" id="cancel-scan" class="text-button" hidden data-i18n="cancelScan">取消查找</button>
@@ -90,14 +95,16 @@
                     <legend class="field-label" data-i18n="gameLabel">游戏</legend>
                     <div id="game-cards" class="game-grid"></div>
                 </fieldset>
-                <div id="game-guide" hidden>
+                <div id="game-guide" class="guide-layout manual-guide-layout" hidden>
                     <div class="guide-box"><h3 data-i18n="guideHeading">文件位置</h3><ol id="guide-steps"></ol></div>
-                    <div id="expected-files" class="expected-files"></div>
-                    <div class="drop-zone compact" id="file-drop">
-                        <h3 data-i18n="dropFiles">把找到的日志和配置文件拖到这里</h3>
-                        <p data-i18n="multipleFiles">可以选择多个文件，也可以分多次添加。</p>
-                        <button type="button" class="primary-button" id="choose-files" data-i18n="chooseFiles">选择日志和配置文件</button>
-                        <input id="file-input" type="file" multiple hidden />
+                    <div class="guide-actions">
+                        <div id="expected-files" class="expected-files"></div>
+                        <div class="drop-zone compact" id="file-drop">
+                            <h3 data-i18n="dropFiles">把找到的日志和配置文件拖到这里</h3>
+                            <p data-i18n="multipleFiles">可以选择多个文件，也可以分多次添加。</p>
+                            <button type="button" class="primary-button" id="choose-files" data-i18n="chooseFiles">选择日志和配置文件</button>
+                            <input id="file-input" type="file" multiple hidden />
+                        </div>
                     </div>
                 </div>
                 <p id="manual-status" class="status" role="status" aria-live="polite"></p>
