@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+.idea/
+.dotnet/
+.nuget/
+*.user
+*.suo
+AGENTS.md
+TODO.md
