@@ -27,12 +27,12 @@ def read_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def atomic_save(path, value):
+def atomic_save(path, value, public=False):
     plain(path)
     staging = path.with_name(path.name + ".new")
     plain(staging)
     with staging.open("w", encoding="utf-8") as stream:
-        os.chmod(staging, 0o600)
+        os.chmod(staging, 0o644 if public else 0o600)
         json.dump(value, stream, separators=(",", ":"))
         stream.flush()
         os.fsync(stream.fileno())
@@ -51,6 +51,27 @@ def limits_from(config):
         if type(value) is not int or not 1 <= value <= 1_000_000:
             raise ValueError("Traffic limits must be positive integer GB values.")
     return config["DailyTrafficLimitGB"] * GB, config["MonthlyTrafficLimitGB"] * GB
+
+
+def publish_status(state=None, limits=None):
+    # Export only aggregate statistics. The website never receives the private accounting file.
+    directory = ROOT / "status"
+    plain(directory)
+    directory.mkdir(mode=0o755, exist_ok=True)
+    os.chmod(directory, 0o755)
+    path = directory / "traffic.json"
+    if state is None:
+        if not path.exists():
+            return  # An absent snapshot is explicitly shown as unknown by the website.
+        value = read_json(path)
+        value["Healthy"] = False
+    else:
+        value = {"Version": 1, "Healthy": True,
+                 "ObservedAt": datetime.fromtimestamp(state["observed_at"], timezone.utc).isoformat(),
+                 "DailyBytes": state["daily_bytes"], "MonthlyBytes": state["monthly_bytes"],
+                 "DailyLimitBytes": limits[0], "MonthlyLimitBytes": limits[1],
+                 "Day": state["day"], "Month": state["month"]}
+    atomic_save(path, value, public=True)
 
 
 def read_counters():
@@ -159,9 +180,16 @@ def check_once():
             raise
         print("Cannot save counters, but a known traffic limit was reached; powering off.", file=sys.stderr)
     if reason:
+        try:
+            publish_status(state, limits)
+        except Exception as error:
+            # Reporting must never prevent the protection action.
+            print(f"Cannot publish shutdown status: {error}", file=sys.stderr)
         print(f"TRAFFIC PROTECTION: {reason}; daily={state['daily_bytes']}, monthly={state['monthly_bytes']} bytes",
               flush=True)
         subprocess.run(["systemctl", "poweroff"], check=True, timeout=20)
+    else:
+        publish_status(state, limits)
 
 
 def main():
@@ -173,7 +201,14 @@ def main():
     plain(lock_path)
     with lock_path.open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        check_once()
+        try:
+            check_once()
+        except Exception:
+            try:
+                publish_status()
+            except Exception as error:
+                print(f"Cannot publish monitoring failure: {error}", file=sys.stderr)
+            raise
 
 
 if __name__ == "__main__":

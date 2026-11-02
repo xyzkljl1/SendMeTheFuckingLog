@@ -73,7 +73,8 @@ class TrafficTests(unittest.TestCase):
                 patch.object(monitor, "read_counters", return_value=counters), \
                 patch.object(monitor, "atomic_save", side_effect=lambda *args: actions.append("save")), \
                 patch.object(monitor.subprocess, "run", side_effect=lambda *args, **kwargs: actions.append(args[0])):
-            monitor.check_once()
+            with patch.object(monitor, "publish_status", side_effect=OSError("test summary failure")):
+                monitor.check_once()
         self.assertEqual(actions, ["save", ["systemctl", "poweroff"]])
 
     def test_below_threshold_never_requests_poweroff(self):
@@ -82,8 +83,25 @@ class TrafficTests(unittest.TestCase):
                 patch.object(monitor.Path, "read_text", return_value="boot-id"), \
                 patch.object(monitor, "read_counters", return_value={"ens5": {"index": 2, "rx": 1, "tx": 2}}), \
                 patch.object(monitor, "atomic_save"), patch.object(monitor.subprocess, "run") as poweroff:
-            monitor.check_once()
+            with patch.object(monitor, "publish_status") as publish:
+                monitor.check_once()
+                publish.assert_called_once()
             poweroff.assert_not_called()
+
+    def test_public_status_excludes_accounting_details_and_marks_failed_checks(self):
+        project = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory(prefix="traffic-public-test-", dir=project / "obj") as directory:
+            saved = []
+            with patch.object(monitor, "ROOT", Path(directory)), \
+                    patch.object(monitor, "atomic_save", side_effect=lambda path, value, **kwargs: saved.append(value)):
+                monitor.publish_status(self.sample(), (25 * monitor.GB, 900 * monitor.GB))
+                self.assertEqual(set(saved[0]), {"Version", "Healthy", "ObservedAt", "DailyBytes", "MonthlyBytes",
+                                               "DailyLimitBytes", "MonthlyLimitBytes", "Day", "Month"})
+                with patch.object(monitor.Path, "exists", return_value=True), \
+                        patch.object(monitor, "read_json", return_value=saved[0].copy()):
+                    monitor.publish_status()
+                self.assertFalse(saved[-1]["Healthy"])
+                self.assertEqual(saved[0]["ObservedAt"], saved[-1]["ObservedAt"])
 
     def test_persisted_file_restores_totals_after_reboot(self):
         project = Path(__file__).resolve().parents[2]

@@ -26,6 +26,38 @@ public sealed class SubmissionStore : IDisposable
     private readonly Dictionary<string, long> reservations = new(StringComparer.Ordinal);
     private FileStream? processLock;
     private long usedBytes;
+    private StorageStatus? statusCache;
+    private DateTimeOffset statusCachedAt;
+
+    public async Task<StorageStatus> GetStatusAsync(CancellationToken token)
+    {
+        await gate.WaitAsync(token);
+        try
+        {
+            if (statusCache is not null && DateTimeOffset.UtcNow - statusCachedAt < TimeSpan.FromSeconds(15))
+                return statusCache;
+            EnsurePlain(root);
+            var folders = new List<SubmissionFolder>();
+            foreach (var directory in Directory.EnumerateDirectories(root))
+            {
+                token.ThrowIfCancellationRequested();
+                if (!IsOwned(directory) || directory.EndsWith(".uploading", StringComparison.Ordinal)) continue;
+                EnsurePlain(directory);
+                var count = 0;
+                foreach (var file in Directory.EnumerateFiles(directory))
+                {
+                    EnsurePlain(file);
+                    if (Path.GetFileName(file) != "submission.json") count++;
+                }
+                folders.Add(new SubmissionFolder(Path.GetFileName(directory), count));
+            }
+            statusCache = new StorageStatus(usedBytes, reservations.Values.Sum(), limits.StorageBytes,
+                folders.OrderByDescending(folder => folder.Name, StringComparer.Ordinal).ToArray());
+            statusCachedAt = DateTimeOffset.UtcNow;
+            return statusCache;
+        }
+        finally { gate.Release(); }
+    }
 
     public SubmissionStore(StorageLimits limits, GameCatalog catalog, ILogger<SubmissionStore> logger)
     {
@@ -346,3 +378,6 @@ public sealed class SubmissionStore : IDisposable
         uploadSlots.Dispose();
     }
 }
+
+public sealed record SubmissionFolder(string Name, int FileCount);
+public sealed record StorageStatus(long UsedBytes, long ReservedBytes, long LimitBytes, SubmissionFolder[] Folders);

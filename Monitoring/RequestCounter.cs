@@ -76,6 +76,16 @@ public sealed class RequestCounter : BackgroundService
 
     private static int Index(long value) => (int)((value % Size + Size) % Size);
 
+    public RequestStatus GetStatus()
+    {
+        lock (gate)
+        {
+            Advance();
+            return new RequestStatus(storageHealthy, totals.Where((value, index) => value >= limits[index]).Any(),
+                Windows.Select((minutes, index) => new RequestWindow(minutes / 60, totals[index], limits[index])).ToArray());
+        }
+    }
+
     private void Advance()
     {
         // A backwards clock change must not reset quotas or count the same minute twice.
@@ -155,3 +165,6 @@ public sealed class RequestCounter : BackgroundService
 
     private sealed record Snapshot(int Version, long Minute, long[] Counts);
 }
+
+public sealed record RequestWindow(int Hours, long Used, long Limit);
+public sealed record RequestStatus(bool PersistenceHealthy, bool Limited, RequestWindow[] Windows);

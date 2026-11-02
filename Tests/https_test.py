@@ -159,6 +159,8 @@ def main():
             for _ in range(35):
                 request("/", secure=True)
             assert request("/", secure=True)[0] == 429
+            status, _, status_html = request("/Status?lang=en", secure=True)
+            assert status == 429 and b"Site-wide request limits" in status_html
             assert request(challenge)[2] == b"test authorization"
             assert request("/.well-known/acme-challenge/nonexistent")[0] == 429
             assert healthy()

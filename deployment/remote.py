@@ -85,6 +85,11 @@ def install_traffic_monitor(payload):
     directory.mkdir(mode=0o700, exist_ok=True)
     require_root_owner(directory)
     os.chmod(directory, 0o700)
+    public_status = directory / "status"
+    plain(public_status)
+    public_status.mkdir(mode=0o755, exist_ok=True)
+    require_root_owner(public_status)
+    os.chmod(public_status, 0o755)
     for name in (TRAFFIC_SERVICE, TRAFFIC_TIMER):
         path = UNIT_DIRECTORY / name
         plain(path, system_unit=True)

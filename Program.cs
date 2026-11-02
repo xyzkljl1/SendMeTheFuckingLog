@@ -27,6 +27,7 @@ try
     builder.Services.AddSingleton(requestLimits);
     builder.Services.AddSingleton(TimeProvider.System);
     builder.Services.AddSingleton<RequestCounter>();
+    builder.Services.AddSingleton<TrafficStatusReader>();
     builder.Services.AddHostedService(services => services.GetRequiredService<RequestCounter>());
     builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
     // Keep this starter app from persisting keys outside its directory.
@@ -50,6 +51,15 @@ try
         // ACME must remain reachable even when the public request quota is exhausted.
         if (await https.HandleChallengeAsync(context)) return;
         var status = requestCounter.Admit();
+        var statusPage = (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method))
+            && (context.Request.Path.Equals("/Status", StringComparison.OrdinalIgnoreCase)
+                || context.Request.Path.Equals("/Status/", StringComparison.OrdinalIgnoreCase));
+        if (statusPage)
+        {
+            context.Response.StatusCode = status;
+            if (!await https.HandleTransportAsync(context)) await next(context);
+            return;
+        }
         if (status == 200)
         {
             if (https.IsChallengePath(context.Request.Path))

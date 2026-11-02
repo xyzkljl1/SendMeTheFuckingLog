@@ -87,7 +87,7 @@ jobs:
             exit 1
           fi
           endpoint=$(docker port send-me-the-log-smoke 8080/tcp)
-          for path in / /css/site.css /js/upload-page.js; do
+          for path in / /css/site.css /js/upload-page.js /Status?lang=en; do
             curl --fail --silent --show-error --max-time 10 "http://$endpoint$path" --output /dev/null
           done
           docker rm --force send-me-the-log-smoke

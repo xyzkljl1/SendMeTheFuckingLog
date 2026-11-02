@@ -1,0 +1,66 @@
+@page "/Status"
+@model SendMeTheFuckingLog.Pages.StatusModel
+@using SendMeTheFuckingLog.Pages
+<!DOCTYPE html>
+<html lang="@(Model.English ? "en" : "zh-CN")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@Model.T("网站状态", "Website status") · Mod Log Helper</title>
+    <style>
+        :root{font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:#203233;background:#f6f8f7;line-height:1.65}*{box-sizing:border-box}body{margin:0}main{max-width:1000px;margin:auto;padding:30px 22px 60px}header,nav,.section-title{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}a{color:#177568;text-underline-offset:3px}a:focus-visible{outline:3px solid #e5ae53;outline-offset:4px}h1{font-size:30px;margin:26px 0 4px}h2{font-size:19px;margin:0}p{margin:8px 0}.muted{color:#687b79;font-size:13px}.card{background:#fff;border:1px solid #dde6e2;border-radius:12px;padding:22px;margin-top:20px}.badge{border-radius:20px;padding:3px 12px;background:#e8f3ed;color:#24634f;font-size:13px}.warning{background:#fff1d9;color:#775422}.error{background:#fce9e5;color:#9d3b2b}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px;margin-top:14px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #e6eeea}th{color:#687b79;font-weight:500}td:last-child,th:last-child{text-align:right}code{font-size:12px;overflow-wrap:anywhere}progress{width:100%;height:9px;accent-color:#177568;display:block;margin-top:6px}.button{display:inline-block;border:1px solid #c8dcd2;border-radius:7px;padding:7px 13px;text-decoration:none;background:white}.pagination{margin-top:18px}.metric{font-size:22px;font-weight:600}.folder-name{max-width:650px}@@media(max-width:600px){main{padding:20px 14px 40px}.card{padding:17px}th,td{padding:10px 5px;font-size:12px}h1{font-size:26px}}
+    </style>
+</head>
+<body><main>
+    <header><a href="/">Mod Log Helper</a><nav aria-label="Language"><a href="@Model.Link(Model.Number, false)" lang="zh-CN">中文</a><a href="@Model.Link(Model.Number, true)" lang="en">English</a></nav></header>
+    <h1>@Model.T("网站状态", "Website status")</h1>
+    <nav><p class="muted">@Model.T("页面时间（UTC）", "Page time (UTC)")：@Model.CheckedAt.ToString("yyyy-MM-dd HH:mm:ss")</p><a class="button" href="@Model.Link(Model.Number)">@Model.T("刷新状态", "Refresh status")</a></nav>
+    <section class="card" aria-labelledby="request-title">
+        <div class="section-title"><h2 id="request-title">@Model.T("全站请求限流", "Site-wide request limits")</h2>
+        @if (!Model.Requests.PersistenceHealthy) { <span class="badge error">@Model.T("计数保存异常 · 503", "Counter persistence error · 503")</span> }
+        else if (Model.Requests.Limited) { <span class="badge warning">@Model.T("已达到限额 · 429", "Limit reached · 429")</span> }
+        else { <span class="badge">@Model.T("正常", "Normal")</span> }</div>
+        <table><thead><tr><th>@Model.T("滚动窗口", "Rolling window")</th><th>@Model.T("已使用 / 上限", "Used / Limit")</th><th>@Model.T("剩余", "Remaining")</th></tr></thead><tbody>
+        @foreach (var window in Model.Requests.Windows)
+        { <tr><td>@window.Hours @Model.T("小时", "hours")</td><td>@window.Used.ToString("N0") / @window.Limit.ToString("N0")<progress max="@window.Limit" value="@window.Used" aria-label="@window.Hours hours"></progress></td><td>@Math.Max(0, window.Limit - window.Used).ToString("N0")</td></tr> }
+        </tbody></table>
+        <p class="muted">@Model.T("统计已放行的请求；被拒绝的请求不继续消耗额度。任意窗口达到上限即限制访问。", "Counts admitted requests. Rejected requests do not consume additional quota. Reaching any window's limit restricts access.")</p>
+    </section>
+    <section class="card" aria-labelledby="traffic-title">
+        <div class="section-title"><h2 id="traffic-title">@Model.T("服务器流量保护", "Server traffic protection")</h2>
+        @if (Model.Traffic is { } traffic)
+        {
+            <span class="badge @(!traffic.Healthy || traffic.Stale || traffic.LimitReached ? "warning" : "")">@(traffic.LimitReached ? Model.T("已达到关机阈值", "Shutdown threshold reached") : !traffic.Healthy ? Model.T("最近采集失败", "Last check failed") : traffic.Stale ? Model.T("数据已过期，监控状态未知", "Stale data; monitor status unknown") : Model.T("最近采集正常", "Recent check successful"))</span>
+        }
+        else { <span class="badge warning">@Model.T("状态未知", "Unknown")</span> }</div>
+        @if (Model.Traffic is { } sample)
+        {
+            <table><thead><tr><th>@Model.T("统计周期（UTC）", "Period (UTC)")</th><th>@Model.T("已使用 / 关机阈值", "Used / Shutdown threshold")</th></tr></thead><tbody>
+            <tr><td>@sample.Day</td><td>@StatusModel.GB(sample.DailyBytes) / @StatusModel.GB(sample.DailyLimitBytes)</td></tr>
+            <tr><td>@sample.Month</td><td>@StatusModel.GB(sample.MonthlyBytes) / @StatusModel.GB(sample.MonthlyLimitBytes)</td></tr>
+            </tbody></table>
+            <p class="muted">@Model.T("最近成功采集（UTC）", "Last successful sample (UTC)")：@sample.ObservedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss")</p>
+        }
+        else { <p class="muted">@(Model.TrafficReadFailed ? Model.T("无法读取监控数据。", "Unable to read monitor data.") : Model.T("尚未收到宿主机的监控数据。本机调试不会运行宿主机流量监控。", "No host monitoring data received. Host traffic monitoring does not run during local debugging."))</p> }
+        <p class="muted">@Model.T("按 UTC 自然日、自然月累计入站与出站总流量，每分钟采集。任一阈值达到即触发关机；超过 3 分钟未更新会标记为过期。", "Inbound and outbound traffic is sampled every minute and totaled by UTC calendar day and month. Either threshold triggers shutdown. Samples older than 3 minutes are marked stale.")</p>
+    </section>
+    <section class="card" aria-labelledby="storage-title">
+        <h2 id="storage-title">@Model.T("已保存的上传", "Saved uploads")</h2>
+        @if (Model.Storage is { } storage)
+        {
+            <p class="metric">@StatusModel.MiB(storage.UsedBytes) / @StatusModel.MiB(storage.LimitBytes)</p>
+            <p class="muted">@Model.T("上传中预留", "Reserved for ongoing uploads")：@StatusModel.MiB(storage.ReservedBytes) · @storage.Folders.Length @Model.T("个文件夹", "folders")</p>
+            <div class="table-wrap"><table><thead><tr><th>@Model.T("文件夹", "Folder")</th><th>@Model.T("文件数量", "File count")</th></tr></thead><tbody>
+            @foreach (var folder in Model.Folders) { <tr><td class="folder-name"><code>@folder.Name</code></td><td>@folder.FileCount</td></tr> }
+            @if (storage.Folders.Length == 0) { <tr><td colspan="2">@Model.T("暂无已完成的上传。", "No completed uploads yet.")</td></tr> }
+            </tbody></table></div>
+            <nav class="pagination" aria-label="Pagination">
+                @if (Model.Number > 1) { <a href="@Model.Link(Model.Number - 1)">@Model.T("上一页", "Previous")</a> }
+                <span class="muted">@Model.Number / @Model.TotalPages</span>
+                @if (Model.Number < Model.TotalPages) { <a href="@Model.Link(Model.Number + 1)">@Model.T("下一页", "Next")</a> }
+            </nav>
+            <p class="muted">@Model.T("每页 50 个文件夹，最新上传在前；文件数仅统计上传文件。列表最多延迟 15 秒更新。", "50 folders per page, newest first. Counts include uploaded files only. The list may be up to 15 seconds old.")</p>
+        }
+        else { <p class="badge error">@Model.T("暂时无法读取文件列表。", "The folder list is temporarily unavailable.")</p> }
+    </section>
+</main></body></html>
