@@ -4,32 +4,30 @@
     const games = config.games;
     const preloadedImages = new Set(config.preloadedImages || []);
     const rules = globalThis.diagnosticRules;
+    const recognizer = rules.createRecognizer(games, config.recognition);
     const $ = id => document.getElementById(id);
     const messages = {
         zh: {
-            eyebrow: "让问题更容易被解决", title: "发送日志，帮助排查 Mod 问题。",
-            recipientBefore: "你提交的日志和相关配置文件将交由作者", recipientAfter: "，用于排查 Mod 问题。",
-            noAccount: "无需注册或登录，按下面的步骤操作即可。",
-            preview: "只有点击发送才会上传选中的文件。存储空间有限，较旧的提交会自动清理。",
-            chooseRoute: "你想如何找到文件？", autoTitle: "我找不到日志", autoDescription: "选择游戏文件夹，网页帮你查找",
-            manualTitle: "我自己选择日志", manualDescription: "按照游戏指引，添加日志和配置",
+            title: "上传日志",
+            recipientBefore: "文件将交给作者", recipientAfter: "，用于排查 Mod 问题。",
+            chooseRoute: "选择方式", autoTitle: "自动选择日志", autoDescription: "从游戏文件夹中查找",
+            manualTitle: "手动选择日志", manualDescription: "按路径指引选择文件",
             folderHeading: "打开游戏本地文件", folderDescription: "在 Steam 中右键游戏，选择「管理 → 浏览本地文件」。在打开的窗口按 Ctrl+A 全选，把所有内容一起拖到下面。",
             dropFolder: "把游戏文件夹里的内容拖到这里", oneFolder: "也可以拖入整个游戏文件夹。", chooseFolder: "选择游戏文件夹",
-            folderPrivacy: "先识别游戏，确认后再查找日志。不会运行或上传游戏程序。", supported: "当前支持：",
+            folderPrivacy: "仅查找日志和配置，不会上传游戏程序。", supported: "当前支持：",
             identifying: "正在识别游戏… 文件不会发送。", droppedContents: "拖入的内容",
-            confirmHeading: "请确认你的游戏", detectedGame: "识别到：{game}", multipleGames: "识别到多个游戏，请选择本次需要排查的游戏。",
-            confirmGame: "确认，查找日志", chooseAgain: "重新选择", gameConfirmed: "已确认：{game}",
+            confirmHeading: "请确认你的游戏", multipleGames: "识别到多个游戏，请选择本次需要排查的游戏。",
+            confirmGame: "确认，查找日志", chooseAgain: "重新选择", gameConfirmed: "已确认游戏",
             gameNotFound: "没有识别到支持的游戏。请从 Steam 打开本地文件后全选拖入，确保包含游戏程序，或使用手动上传。",
             duplicateFiles: "找到多份相同的诊断文件或游戏目录。请只拖入一份游戏安装的内容。",
             cancelScan: "取消查找", autoHelp: "请确认选择的是游戏安装文件夹。日志可能尚未生成，也可能位于所选目录之外。",
-            viewManual: "查看手动查找指引 →", gameHeading: "选择你的游戏", gameDescription: "我们会告诉你需要哪些文件，以及在哪里找到它们。",
-            gameLabel: "游戏", chooseGame: "请选择游戏", noGames: "暂未配置支持的游戏", guideHeading: "跟着下面的步骤找到文件", demo: "演示", demoOnly: "此游戏仅用于展示控件，不提供文件上传。",
+            viewManual: "查看手动查找指引 →", gameHeading: "选择游戏",
+            gameLabel: "游戏", chooseGame: "请选择游戏", noGames: "暂未配置支持的游戏", guideHeading: "文件位置", demo: "演示", demoOnly: "此游戏仅用于展示控件，不提供文件上传。",
             dropFiles: "把找到的日志和配置文件拖到这里", multipleFiles: "可以选择多个文件，也可以分多次添加。",
             chooseFiles: "选择日志和配置文件", selectedFiles: "已选择的文件", configNote: "配置文件可能包含私人信息，请在发送前检查内容。",
-            nicknameHeading: "告诉作者你是谁", nicknameDescription: "填写你向作者求助时使用的昵称，方便对应问题。",
+            nicknameHeading: "填写昵称", nicknameDescription: "使用向作者求助时的昵称，方便对应问题。",
             nicknameLabel: "你的昵称", required: "必填", nicknamePlaceholder: "例如：你在 Nexus Mods 上的昵称",
-            nicknameHint: "昵称只用于这一次提交，不会创建账号。", sendHeading: "确认后，交给作者排查",
-            sendNote: "请确认文件和昵称，再点击发送。", send: "发送给 {author}", sent: "已保存",
+            sendNote: "点击发送才会上传；旧提交会自动清理。", send: "发送给 {author}", sent: "已保存",
             limits: "单个文件不超过 {file}，一次提交合计不超过 {total}。",
             preparing: "正在检查文件…", uploading: "正在上传… {percent}%", saving: "文件已传输，正在确认保存…",
             success: "保存成功，共 {count} 个文件。", receiptHeading: "提交编号", receiptHint: "把这个编号告诉作者，方便找到你的文件。",
@@ -42,7 +40,6 @@
             incompleteUpload: "文件未完整接收或校验未通过，本次提交未保存，请重试。", refreshPage: "页面已过期，请刷新页面后重新选择文件。",
             unknownResult: "连接中断，无法确认是否保存成功。请先联系作者核实，避免重复提交。",
             readFailed: "无法读取所选文件，请重新选择后再试。", secureRequired: "请通过 HTTPS 打开本站后再上传文件。",
-            footer: "为更轻松的 Mod 问题反馈而设计", footerPrivacy: "文件由你选择，发送由你确认",
             log: "日志", config: "配置", copy: "复制路径", copied: "已复制", copyFailed: "无法复制，请选中路径手动复制。",
             scanning: "正在检查 {folder}… 文件不会发送。", found: "已检查 {folder}，找到 {count} 个诊断文件。",
             notFound: "在 {folder} 中没有找到诊断文件。请按手动指引检查日志位置。", folderOnly: "请拖入整个游戏文件夹，或全选游戏文件夹里的内容一起拖入。",
@@ -55,29 +52,26 @@
             filesOnly: "请添加文件，不要添加文件夹。", pickGameFirst: "请先选择游戏。", selected: "已添加", notSelected: "尚未添加"
         },
         en: {
-            eyebrow: "A little context. A quicker fix.", title: "Share your logs. Help fix your mod.",
-            recipientBefore: "Your logs and related configuration files will be shared with the author", recipientAfter: " to help investigate your mod issue.",
-            noAccount: "No account or sign-in needed. Just follow the steps below.",
-            preview: "Files are uploaded only when you click Send. Storage is limited; older submissions are automatically removed.",
-            chooseRoute: "How would you like to find your files?", autoTitle: "Help me find my logs", autoDescription: "Choose your game folder. We’ll find the files.",
-            manualTitle: "I’ll choose my files", manualDescription: "Follow a game-specific guide to add your files.",
+            title: "Upload logs",
+            recipientBefore: "Files will be sent to the author", recipientAfter: " to troubleshoot your mod issue.",
+            chooseRoute: "Choose a method", autoTitle: "Select logs automatically", autoDescription: "Find files in your game folder",
+            manualTitle: "Select logs manually", manualDescription: "Choose files using the path guide",
             folderHeading: "Open your game's local files", folderDescription: "In Steam, right-click the game and choose Manage → Browse local files. Press Ctrl+A in that window, then drag everything below.",
             dropFolder: "Drop the contents of your game folder here", oneFolder: "You can also drop the whole game folder.", chooseFolder: "Choose game folder",
-            folderPrivacy: "Confirm the game before we find logs. Game executables are never run or uploaded.", supported: "Currently supported: ",
+            folderPrivacy: "Only logs and settings are selected. Game executables are never uploaded.", supported: "Currently supported: ",
             identifying: "Identifying your game… Nothing will be sent.", droppedContents: "the dropped items",
-            confirmHeading: "Confirm your game", detectedGame: "Game found: {game}", multipleGames: "Multiple games were found. Choose the game you need help with.",
-            confirmGame: "Confirm and find logs", chooseAgain: "Choose again", gameConfirmed: "Confirmed: {game}",
+            confirmHeading: "Confirm your game", multipleGames: "Multiple games were found. Choose the game you need help with.",
+            confirmGame: "Confirm and find logs", chooseAgain: "Choose again", gameConfirmed: "Game confirmed",
             gameNotFound: "No supported game was identified. Open local files from Steam and drag all contents, including the game executable, or choose files manually.",
             duplicateFiles: "Multiple copies of a diagnostic file or game folder were found. Drop the contents of just one game installation.",
             cancelScan: "Cancel search", autoHelp: "Check that you selected the game’s installation folder. Logs may not exist yet, or may be outside this folder.",
-            viewManual: "Show me the manual guide →", gameHeading: "Choose your game", gameDescription: "We’ll show you which files to select and where to find them.",
-            gameLabel: "Game", chooseGame: "Choose a game", noGames: "No supported games configured yet", guideHeading: "Follow these steps to find your files", demo: "Demo", demoOnly: "This game is a selection preview. File uploads are unavailable.",
+            viewManual: "Show the manual guide →", gameHeading: "Choose your game",
+            gameLabel: "Game", chooseGame: "Choose a game", noGames: "No supported games configured yet", guideHeading: "File locations", demo: "Demo", demoOnly: "This game is a selection preview. File uploads are unavailable.",
             dropFiles: "Drop your logs and configuration files here", multipleFiles: "Select multiple files, or add them in separate steps.",
             chooseFiles: "Choose logs and settings", selectedFiles: "Selected files", configNote: "Configuration files may contain private information. Check their contents before sending.",
-            nicknameHeading: "Let the author know it’s you", nicknameDescription: "Use the nickname you used when asking the author for help.",
+            nicknameHeading: "Enter your nickname", nicknameDescription: "Use the nickname you used when asking the author for help.",
             nicknameLabel: "Your nickname", required: "Required", nicknamePlaceholder: "For example, your Nexus Mods nickname",
-            nicknameHint: "Used for this submission only. This does not create an account.", sendHeading: "Ready for the author to investigate",
-            sendNote: "Check your files and nickname before sending.", send: "Send to {author}", sent: "Saved",
+            sendNote: "Uploads start when you click Send. Older submissions are automatically removed.", send: "Send to {author}", sent: "Saved",
             limits: "Up to {file} per file and {total} per submission.",
             preparing: "Checking files…", uploading: "Uploading… {percent}%", saving: "Files transferred. Confirming they are saved…",
             success: "Saved successfully. {count} files received.", receiptHeading: "Submission ID", receiptHint: "Share this ID with the author so they can find your files.",
@@ -90,7 +84,6 @@
             incompleteUpload: "The files were incomplete or failed verification. This submission was not saved. Please retry.", refreshPage: "This page has expired. Refresh it and select your files again.",
             unknownResult: "The connection was interrupted. We cannot confirm whether your files were saved. Check with the author before retrying to avoid duplicates.",
             readFailed: "Could not read the selected files. Please select them again.", secureRequired: "Open this website over HTTPS to upload files.",
-            footer: "A simpler way to report mod issues", footerPrivacy: "You choose the files. You confirm what’s sent.",
             log: "Log", config: "Settings", copy: "Copy path", copied: "Copied", copyFailed: "Could not copy. Select the path and copy it manually.",
             scanning: "Checking {folder}… Nothing will be sent.", found: "Checked {folder}. Found {count} diagnostic files.",
             notFound: "No diagnostic files were found in {folder}. Check the locations in the manual guide.", folderOnly: "Drop the whole game folder, or select and drop all of its contents together.",
@@ -228,10 +221,12 @@
     function renderRecognition() {
         const confirmed = state.confirmedGame;
         const multiple = state.candidates.length > 1;
+        $("automatic-source").hidden = state.candidates.length > 0;
         $("game-confirmation").hidden = !state.candidates.length;
-        $("detected-game-name").textContent = confirmed ? text("gameConfirmed", { game: gameName(confirmed) })
-            : multiple ? text("multipleGames")
-            : state.candidates.length ? text("detectedGame", { game: gameName(state.candidates[0].game) }) : "";
+        $("auto-panel").setAttribute("aria-labelledby", state.candidates.length ? "confirm-heading" : "auto-heading");
+        $("confirm-heading").textContent = text(confirmed ? "gameConfirmed" : "confirmHeading");
+        $("game-choice-hint").hidden = !multiple || Boolean(confirmed);
+        $("game-choice-hint").textContent = multiple && !confirmed ? text("multipleGames") : "";
         renderGameCards("detected-game-cards", state.candidates.map((candidate, index) => ({ game: candidate.game, value: String(index) })),
             "detected-game", state.candidateIndex, value => { state.candidateIndex = value; renderUpload(); });
         $("confirm-game").hidden = Boolean(confirmed);
@@ -364,15 +359,14 @@
         state.source = source; state.scanning = true;
         setStatus("auto", "identifying"); renderRecognition(); renderSelection();
         try {
-            const candidates = await rules.identifyGames(games, source, () => token !== state.scanToken);
+            const candidates = await recognizer.identify(source, () => token !== state.scanToken);
             if (token !== state.scanToken) return;
             if (new Set(candidates.map(candidate => candidate.game.id)).size !== candidates.length) throw new Error("duplicateFiles");
             state.candidates = candidates; state.candidateIndex = candidates.length === 1 ? "0" : "";
             state.scanning = false; state.autoHelp = !candidates.length;
             state.autoStatus = candidates.length ? null : { key: "gameNotFound", args: {}, error: true };
             renderRecognition(); renderStatus();
-            if (candidates.length === 1) $("confirm-game").focus();
-            else if (candidates.length) $("detected-game-cards").querySelector("input")?.focus();
+            if (candidates.length) $("detected-game-cards").querySelector("input:checked, input")?.focus();
         } catch (error) { failScan(token, error); }
     }
     function failScan(token, error) {

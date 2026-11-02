@@ -52,16 +52,88 @@
         }
         for (const entry of source.entries) await visit(entry, entry.name);
     }
+    async function rootItems(source, onItem, cancelled) {
+        let visited = 0;
+        const check = () => {
+            if (cancelled()) throw new Error("cancelled");
+            if (++visited > 100000) throw new Error("tooMany");
+        };
+        if (source.files) {
+            // Folder pickers expose files, so infer direct subdirectories from their paths.
+            // Empty directories are not exposed by this browser API.
+            const seen = new Set();
+            for (const file of source.files) {
+                check();
+                const parts = normalize(file.webkitRelativePath).split("/").slice(1);
+                const directory = parts.length > 1;
+                const key = (directory ? "d:" : "f:") + parts[0];
+                if (!seen.has(key)) { seen.add(key); onItem(parts[0], directory); }
+                if (visited % 200 === 0) await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        } else if (source.folder) {
+            const reader = source.entries[0].createReader();
+            while (true) {
+                if (cancelled()) throw new Error("cancelled");
+                const batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+                if (cancelled()) throw new Error("cancelled");
+                if (!batch.length) break;
+                for (const entry of batch) { check(); onItem(entry.name, entry.isDirectory); }
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        } else {
+            for (const entry of source.entries) {
+                check(); onItem(entry.name, entry.isDirectory);
+                if (visited % 200 === 0) await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        }
+    }
+    function createRecognizer(games, mappings = {}) {
+        const supported = games.filter(game => !game.isDemo);
+        const byId = new Map(supported.map(game => [game.id, game]));
+        const ue = new Map(), re = new Map(), genericIds = new Set();
+        const excluded = new Set(["engine", "mods", "platform", "steam"]);
+        for (const [entries, index] of [[mappings.ue || {}, ue], [mappings.re || {}, re]]) {
+            for (const [name, id] of Object.entries(entries)) {
+                if (!byId.has(id)) continue;
+                index.set(name.toLowerCase(), byId.get(id)); genericIds.add(id);
+            }
+        }
+        const independent = supported.filter(game => !genericIds.has(game.id));
+        return {
+            async identify(source, cancelled) {
+                if (cancelled()) throw new Error("cancelled");
+                const hits = new Set();
+                if (ue.size || re.size) {
+                    await rootItems(source, (name, directory) => {
+                        name = name.toLowerCase();
+                        const game = directory ? (!excluded.has(name) && ue.get(name))
+                            : (name.endsWith(".exe") && re.get(name));
+                        if (game) hits.add(game);
+                    }, cancelled);
+                }
+                // Keep all root-level candidates for user confirmation; do not scan independent rules after a hit.
+                if (hits.size) return supported.filter(game => hits.has(game))
+                    .map(game => ({ game, prefix: source.prefixes[0] }));
+                const candidates = independent.flatMap(game => source.prefixes.map(prefix => ({ game, prefix })));
+                const paths = new Map();
+                for (const candidate of candidates) {
+                    for (const path of candidate.game.executablePaths || []) {
+                        const key = normalize(candidate.prefix + path);
+                        if (!paths.has(key)) paths.set(key, []);
+                        paths.get(key).push(candidate);
+                    }
+                }
+                if (!paths.size) return [];
+                const matches = new Set();
+                await walk(source, [...paths.keys()], path => {
+                    paths.get(path).forEach(candidate => matches.add(candidate));
+                }, cancelled);
+                return candidates.filter(candidate => matches.has(candidate));
+            }
+        };
+    }
     async function identifyGames(games, source, cancelled) {
-        const candidates = games.filter(game => !game.isDemo).flatMap(game => source.prefixes.map(prefix => ({ game, prefix })));
-        const matches = new Set();
-        const paths = candidates.flatMap(candidate => (candidate.game.executablePaths || []).map(path => candidate.prefix + path));
-        await walk(source, paths, path => {
-            candidates.forEach(candidate => {
-                if ((candidate.game.executablePaths || []).some(expected => normalize(candidate.prefix + expected) === path)) matches.add(candidate);
-            });
-        }, cancelled);
-        return candidates.filter(candidate => matches.has(candidate));
+        return createRecognizer(games).identify(source, cancelled);
     }
     async function collectFiles(candidate, source, cancelled) {
         const { game, prefix } = candidate;
@@ -88,7 +160,7 @@
         return game.files.find(item => item.paths.some(path =>
             normalize(path).split("/").pop() === normalize(name))) || null;
     }
-    const rules = { droppedSource, pickedSource, identifyGames, collectFiles, matchManualFile };
+    const rules = { droppedSource, pickedSource, createRecognizer, identifyGames, collectFiles, matchManualFile };
     if (typeof module !== "undefined" && module.exports) module.exports = rules;
     else root.diagnosticRules = rules;
 })(globalThis);
