@@ -129,7 +129,7 @@
         sending: false, submitted: false, uploadStatus: null, receipt: null, receiptNickname: "", progress: null
     };
     const local = value => value[state.language] || value.en;
-    const gameName = game => `${game.name.zh} / ${game.name.en}`;
+    const gameName = game => state.language === "zh" ? `${game.name.zh} / ${game.name.en}` : game.name.en;
     const text = (key, args = {}) => (messages[state.language][key] || key).replace(/\{(\w+)\}/g, (_, name) => args[name] ?? "");
     const sizeText = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
     const make = (tag, className, value) => { const element = document.createElement(tag); element.className = className; if (value !== undefined) element.textContent = value; return element; };
@@ -138,9 +138,10 @@
         const primary = container.querySelector(".game-name-primary");
         const secondary = container.querySelector(".game-name-secondary");
         primary.textContent = local(game.name);
-        secondary.textContent = game.name[state.language === "zh" ? "en" : "zh"];
+        secondary.textContent = state.language === "zh" ? game.name.en : "";
+        secondary.hidden = state.language !== "zh";
         primary.lang = state.language === "zh" ? "zh-CN" : "en";
-        secondary.lang = state.language === "zh" ? "en" : "zh-CN";
+        secondary.lang = "en";
     }
     function appendGameNames(container, game) {
         container.append(make("strong", "game-name-primary"), make("span", "game-name-secondary"));
