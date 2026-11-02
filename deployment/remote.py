@@ -6,18 +6,31 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+from settings import APP_LABEL, RUN_LABEL, identity
 
 ROOT = Path("/opt/send-me-the-log")
-IMAGE = "ghcr.io/xyzkljl1/sendmethefuckinglog"
-SOURCE = "https://github.com/xyzkljl1/SendMeTheFuckingLog"
-APP_LABEL = "io.github.xyzkljl1.application"
 APP = "send-me-the-log"
+IMAGE = SOURCE = LEGACY_LABEL = LEGACY_RUN_LABEL = ""
 TRAFFIC_SERVICE = APP + "-traffic.service"
 TRAFFIC_TIMER = APP + "-traffic.timer"
 TLS_SERVICE = APP + "-tls.service"
 TLS_TIMER = APP + "-tls.timer"
-UNIT_DIRECTORY = Path("/etc/systemd/system")
 UNIT_MARKER = "# Managed by send-me-the-log deployment.\n"
+UNIT_DIRECTORY = Path("/etc/systemd/system")
+
+
+def configure(deployment):
+    global IMAGE, SOURCE, LEGACY_LABEL, LEGACY_RUN_LABEL
+    checked = identity(deployment["repository"])
+    if checked != deployment:
+        raise ValueError("Inconsistent deployment identity.")
+    IMAGE, SOURCE = checked["image"], checked["source"]
+    LEGACY_LABEL = f"io.github.{checked['owner']}.application"
+    LEGACY_RUN_LABEL = f"io.github.{checked['owner']}.deployment-run"
+
+
+def owned_labels(labels):
+    return labels.get(APP_LABEL) == APP or labels.get(LEGACY_LABEL) == APP
 
 
 def run(*args, **kwargs):
@@ -29,6 +42,8 @@ def output(*args):
 
 
 def validate_payload(payload):
+    if not IMAGE:
+        raise ValueError("Deployment identity was not configured.")
     if not re.fullmatch(re.escape(IMAGE) + r"@sha256:[a-f0-9]{64}", payload["image"]):
         raise ValueError("Only this project's pinned GHCR image is accepted.")
     if not re.fullmatch(r"[1-9][0-9]*", str(payload["run"])):
@@ -148,6 +163,7 @@ def install_tls(payload):
     manager = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(manager)
     manager.ROOT = ROOT
+    manager.LEGACY_LABEL = LEGACY_LABEL
     domain = manager.settings(files["tls.json"])
     manager.prepare()
     atomic_write(directory / "tls.json", files["tls.json"])
@@ -167,11 +183,16 @@ def check_container(container, run_number):
     if container is None:
         return
     labels = container["Config"].get("Labels") or {}
-    if (labels.get(APP_LABEL) != APP
+    if (not owned_labels(labels)
+            or (labels.get("org.opencontainers.image.source") or "").lower() != SOURCE.lower()
             or labels.get("com.docker.compose.project") != APP
             or labels.get("com.docker.compose.service") != "web"):
         raise RuntimeError("Existing container is not managed by this deployment. One-time migration is required.")
-    if int(labels.get("io.github.xyzkljl1.deployment-run", "0")) > int(run_number):
+    if labels.get(APP_LABEL) != APP:
+        mounts = container.get("Mounts") or []
+        if not any(mount.get("Destination") == "/app/data" and mount.get("Source") == str(ROOT / "app" / "data") for mount in mounts):
+            raise RuntimeError("Legacy container has an unexpected data directory; refusing migration.")
+    if int(labels.get(RUN_LABEL, labels.get(LEGACY_RUN_LABEL, "0"))) > int(run_number):
         raise RuntimeError("A newer workflow has already deployed; refusing stale deployment.")
 
 
@@ -191,8 +212,7 @@ def cleanup_images(current_id):
     digest_pattern = re.escape(IMAGE) + r"@sha256:[a-f0-9]{64}"
     # Containerd-backed Docker can also expose digest references in RepoTags.
     reference_pattern = re.escape(IMAGE) + r"(?::[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}|@sha256:[a-f0-9]{64})"
-    candidates = output("docker", "image", "ls", "-aq", "--no-trunc",
-                        "--filter", f"label={APP_LABEL}={APP}").splitlines()
+    candidates = project_images()
     for image_id in sorted(set(candidates)):
         if image_id == current_id:
             continue
@@ -200,7 +220,7 @@ def cleanup_images(current_id):
         labels = info["Config"].get("Labels") or {}
         tags = info.get("RepoTags") or []
         digests = info.get("RepoDigests") or []
-        if (labels.get(APP_LABEL) != APP or labels.get("org.opencontainers.image.source") != SOURCE
+        if (not owned_labels(labels) or (labels.get("org.opencontainers.image.source") or "").lower() != SOURCE.lower()
                 or any(not re.fullmatch(reference_pattern, tag) for tag in tags)
                 or any(not re.fullmatch(digest_pattern, digest) for digest in digests)):
             raise RuntimeError(f"Old image {image_id} has unexpected ownership/references; refusing to delete it.")
@@ -211,15 +231,30 @@ def cleanup_images(current_id):
         remaining = output("docker", "image", "ls", "-aq", "--no-trunc").splitlines()
         if image_id in remaining:
             run("docker", "image", "rm", image_id)
-    remaining = set(output("docker", "image", "ls", "-aq", "--no-trunc",
-                           "--filter", f"label={APP_LABEL}={APP}").splitlines())
+    remaining = project_images()
     if remaining != {current_id}:
         raise RuntimeError("Server image cleanup verification failed.")
+
+
+def project_images():
+    result = set()
+    for label in (APP_LABEL, LEGACY_LABEL):
+        result.update(output("docker", "image", "ls", "-aq", "--no-trunc", "--filter", f"label={label}={APP}").splitlines())
+    return result
+
+
+def install_site_config(site):
+    # The containing app directory is root-only; the container can read the bound file as GID 1000.
+    path = ROOT / "app" / "appsettings.Runtime.json"
+    atomic_write(path, json.dumps(site, ensure_ascii=False))
+    os.chown(path, 0, 1000)
+    os.chmod(path, 0o640)
 
 
 def main(payload):
     import fcntl
 
+    configure(payload["deployment"])
     validate_payload(payload)
     if os.geteuid() != 0:
         raise RuntimeError("Deployment requires passwordless sudo for this SSH account.")
@@ -256,13 +291,13 @@ def main(payload):
             image_info = json.loads(output("docker", "image", "inspect", payload["image"]))[0]
             labels = image_info["Config"].get("Labels") or {}
             if (labels.get(APP_LABEL) != APP
-                    or labels.get("org.opencontainers.image.source") != SOURCE
+                    or (labels.get("org.opencontainers.image.source") or "").lower() != SOURCE.lower()
                     or labels.get("org.opencontainers.image.revision") != payload["revision"]
                     or image_info.get("Architecture") != "amd64"
                     or not image_info["Config"].get("Healthcheck")):
                 raise RuntimeError("Pulled image does not match the expected application/revision/architecture.")
             atomic_write(ROOT / "compose.yaml", payload["compose"])
-            atomic_write(ROOT / "image.env", f"APP_IMAGE={payload['image']}\nDEPLOY_RUN={payload['run']}\nTLS_DOMAIN={domain}\n")
+            atomic_write(ROOT / "image.env", f"APP_IMAGE={payload['image']}\nDEPLOY_RUN={payload['run']}\n")
             compose = docker + ["compose", "--project-name", APP, "--project-directory", str(ROOT),
                                 "--env-file", str(ROOT / "image.env"), "-f", str(ROOT / "compose.yaml")]
             run(*compose, "config", "--quiet")
@@ -271,6 +306,7 @@ def main(payload):
             stopped = inspect_container()
             if stopped and stopped["State"]["Running"]:
                 raise RuntimeError("Old application is still running; request counters were not reset.")
+            install_site_config(payload["site"])
             reset_request_counts()
             # No automatic rollback; failed starts leave old images available for investigation.
             run(*compose, "up", "--detach", "--force-recreate", "--no-build", "--pull", "never",

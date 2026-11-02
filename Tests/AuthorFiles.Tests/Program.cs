@@ -23,7 +23,7 @@ try
     builder.WebHost.UseUrls("http://127.0.0.1:0");
     builder.Logging.ClearProviders();
     builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> {
-        ["AuthorAccess:AllowedDomains:0"] = "first.example", ["AuthorAccess:AllowedDomains:1"] = "second.example"
+        ["AuthorAccess:AllowedClients:0"] = "first.example", ["AuthorAccess:AllowedClients:1"] = "second.example"
     });
     var resolver = new FakeResolver();
     var clock = new FakeClock();
@@ -133,6 +133,26 @@ try
         using (var removed = await Get($"/files?handler=Download&{fileQuery}")) Check(removed.StatusCode == HttpStatusCode.NotFound, "Retention removed file");
         resolver.Addresses.Clear(); await Refresh();
         using (var revoked = await Get("/files")) Check(revoked.StatusCode == HttpStatusCode.Forbidden, "Revoke when DNS fails");
+        builder.Configuration["AuthorAccess:AllowedClients:0"] = " 127.0.0.1 ";
+        builder.Configuration["AuthorAccess:AllowedClients:1"] = "2001:db8::2";
+        await Refresh();
+        Check(access.Allows(IPAddress.Parse("::ffff:127.0.0.1")) && access.Allows(IPAddress.Parse("2001:db8::2")), "Literal IPv4 and IPv6");
+        using (var literal = await Get("/files")) Check(literal.StatusCode == HttpStatusCode.OK, "Literal IP HTTP access");
+        builder.Configuration["AuthorAccess:AllowedClients:1"] = "failed.example";
+        await Refresh();
+        Check(access.Allows(loopback), "Literal IP survives domain DNS failure");
+        builder.Configuration["AuthorAccess:AllowedClients:0"] = "*";
+        await Refresh();
+        Check(access.Allows(IPAddress.Parse("203.0.113.100")) && access.Allows(IPAddress.Parse("2001:db8::99")) && !access.Allows(null), "Explicit any-IP entry");
+        using (var any = await Get($"/files?handler=Download&submission={id}&name=large.log"))
+            Check(any.StatusCode == HttpStatusCode.OK, "Wildcard also permits downloads");
+        builder.Configuration["AuthorAccess:AllowedClients:0"] = "192.0.2.40";
+        await Refresh();
+        using (var restricted = await Get("/files")) Check(restricted.StatusCode == HttpStatusCode.Forbidden, "Removing wildcard revokes access");
+        builder.Configuration["AuthorAccess:AllowedClients:0"] = "*";
+        builder.Configuration["AuthorAccess:AllowedClients:1"] = "https://invalid.example/path";
+        await Refresh();
+        Check(!access.Allows(loopback), "Invalid configuration fails closed even with wildcard");
         Console.WriteLine("PASS: DNS changes/failures/expiry, IPv4/IPv6, all HTTP handlers, spoofed headers, bilingual listing, safe preview, download, traversal, retention and metadata failure.");
     }
     finally { await app.StopAsync(); }

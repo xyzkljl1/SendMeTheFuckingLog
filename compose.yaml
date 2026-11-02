@@ -16,7 +16,6 @@ services:
     stop_grace_period: 150s
     environment:
       Tls__Enabled: "true"
-      Tls__Domain: ${TLS_DOMAIN:?TLS_DOMAIN is required}
     ports:
       - "0.0.0.0:80:8080"
       - "0.0.0.0:443:8443"
@@ -49,9 +48,15 @@ services:
         target: /app/tmp
         bind:
           create_host_path: false
+      - type: bind
+        source: /opt/send-me-the-log/app/appsettings.Runtime.json
+        target: /app/appsettings.Runtime.json
+        read_only: true
+        bind:
+          create_host_path: false
     labels:
-      io.github.xyzkljl1.application: send-me-the-log
-      io.github.xyzkljl1.deployment-run: ${DEPLOY_RUN:?DEPLOY_RUN is required}
+      io.sendmethelog.application: send-me-the-log
+      io.sendmethelog.deployment-run: ${DEPLOY_RUN:?DEPLOY_RUN is required}
     logging:
       driver: local
       options:

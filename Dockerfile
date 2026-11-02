@@ -7,8 +7,6 @@ RUN dotnet publish SendMeTheFuckingLog.csproj --configuration Release --no-resto
     --self-contained false -p:UseAppHost=false -p:ServerGarbageCollection=false -o /out
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:de0ee358cdd672f7017a003bed21e9ac9ed48a27c922a59b18175b6e82fa7fee
-LABEL org.opencontainers.image.source="https://github.com/xyzkljl1/SendMeTheFuckingLog" \
-      io.github.xyzkljl1.application="send-me-the-log"
 WORKDIR /app
 COPY --from=build /out/ ./
 COPY deployment/healthcheck.sh ./healthcheck.sh

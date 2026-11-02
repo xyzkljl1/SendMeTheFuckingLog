@@ -7,6 +7,7 @@ import shlex
 import subprocess
 import sys
 import tempfile
+from settings import load_identity, site_config
 
 
 def main():
@@ -24,19 +25,27 @@ def main():
     if not port.isdecimal() or not 1 <= int(port) <= 65535:
         raise ValueError("Invalid SSH port.")
     root = Path(__file__).resolve().parent.parent
+    deployment = load_identity()
+    site = site_config()
     payload = {
         "script": (root / "deployment" / "remote.py").read_text(encoding="utf-8"),
         "compose": (root / "compose.yaml").read_text(encoding="utf-8"),
         "image": os.environ["APP_IMAGE"], "actor": os.environ["GITHUB_ACTOR"],
         "revision": os.environ["GITHUB_SHA"], "run": os.environ["GITHUB_RUN_NUMBER"],
         "token": os.environ["GH_TOKEN"],
+        "deployment": deployment,
+        "site": site,
+        "settings_code": (root / "deployment" / "settings.py").read_text(encoding="utf-8"),
         "traffic": {name: (root / "deployment" / name).read_text(encoding="utf-8") for name in (
             "traffic_monitor.py", "traffic-limits.json", "send-me-the-log-traffic.service",
             "send-me-the-log-traffic.timer")},
         "tls": {name: (root / "deployment" / name).read_text(encoding="utf-8") for name in (
-            "tls_manager.py", "tls.json", "send-me-the-log-tls.service", "send-me-the-log-tls.timer")},
+            "tls_manager.py", "send-me-the-log-tls.service", "send-me-the-log-tls.timer")},
     }
-    bootstrap = "import json,sys; p=json.load(sys.stdin); exec(compile(p.pop('script'),'<deployment>','exec')); main(p)"
+    payload["tls"]["tls.json"] = json.dumps({"Domain": site["Tls"]["Domain"]})
+    bootstrap = ("import json,sys,types; p=json.load(sys.stdin); "
+                 "m=types.ModuleType('settings'); exec(compile(p.pop('settings_code'),'<settings>','exec'),m.__dict__); "
+                 "sys.modules['settings']=m; exec(compile(p.pop('script'),'<deployment>','exec')); main(p)")
     # Temporary credentials are inside the checkout and removed even on failure.
     with tempfile.TemporaryDirectory(prefix=".ssh-", dir=root) as directory:
         key = Path(directory) / "key"

@@ -13,7 +13,7 @@ import sys
 import tempfile
 import time
 
-DOMAIN = "www.sendmethefuckinglog.top"
+DOMAIN = "logs.example.com"
 
 
 def wait_for_startup(probe, is_running, timeout=30):

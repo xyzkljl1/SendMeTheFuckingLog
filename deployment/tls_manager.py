@@ -12,7 +12,8 @@ import time
 
 ROOT = Path("/opt/send-me-the-log")
 APP = "send-me-the-log"
-LABEL = "io.github.xyzkljl1.application"
+LABEL = "io.sendmethelog.application"
+LEGACY_LABEL = ""
 CERTBOT = "certbot/certbot@sha256:bc93cb710b413e6b456d622f9b0133b3e109c0a78c2ed9976af43d209b0a1805"
 CERTBOT_NAME = APP + "-certbot"
 
@@ -82,7 +83,8 @@ def remove_stale_certbot():
     if not ids:
         return
     info = json.loads(run("docker", "inspect", ids, stdout=subprocess.PIPE).stdout)[0]
-    if (info["Config"].get("Labels") or {}).get(LABEL) != APP:
+    labels = info["Config"].get("Labels") or {}
+    if labels.get(LABEL) != APP and labels.get(LEGACY_LABEL) != APP:
         raise RuntimeError("Refusing to remove an unrelated Certbot container.")
     run("docker", "rm", "--force", ids, stdout=subprocess.DEVNULL)
 

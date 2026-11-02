@@ -5,7 +5,7 @@ namespace SendMeTheFuckingLog.Models;
 
 public sealed class UploadPageOptions
 {
-    public string AuthorName { get; set; } = "xyzkljl1";
+    public string AuthorName { get; set; } = "Mod Author";
     public string[] AutomaticGuideImages { get; set; } = [];
 }
 

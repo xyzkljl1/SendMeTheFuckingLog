@@ -6,13 +6,19 @@ import re
 import sys
 import urllib.error
 import urllib.request
+from settings import load_identity
 
-OWNER = "xyzkljl1"
-PACKAGE = "sendmethefuckinglog"
-REPOSITORY = "xyzkljl1/SendMeTheFuckingLog"
-IMAGE = f"ghcr.io/{OWNER}/{PACKAGE}"
-API = f"https://api.github.com/users/{OWNER}/packages/container/{PACKAGE}"
+OWNER = PACKAGE = REPOSITORY = IMAGE = API = ""
 DIGEST = re.compile(r"sha256:[a-f0-9]{64}")
+
+
+def configure(deployment, owner_type):
+    global OWNER, PACKAGE, REPOSITORY, IMAGE, API
+    if owner_type not in ("User", "Organization"):
+        raise ValueError("GitHub repository owner type is missing or unsupported.")
+    OWNER, PACKAGE, REPOSITORY, IMAGE = (deployment[key] for key in ("owner", "package", "repository", "image"))
+    segment = "orgs" if owner_type == "Organization" else "users"
+    API = f"https://api.github.com/{segment}/{OWNER}/packages/container/{PACKAGE}"
 
 
 def api(path="", method="GET", allow_missing=False):
@@ -50,8 +56,7 @@ def check_package(allow_missing=False):
     if package.get("visibility") != "public":
         raise RuntimeError(
             f"Expected a public GHCR package; actual visibility: {package.get('visibility')!r}. "
-            f"Open https://github.com/users/{OWNER}/packages/container/package/{PACKAGE} "
-            "then Package settings > Danger Zone > Change visibility > Public, and rerun the workflow."
+            "Open the package's settings, change visibility to Public, and rerun the workflow."
         )
 
 
@@ -78,6 +83,7 @@ def cleanup_plan(items, keep_digest):
 
 
 def main():
+    configure(load_identity(), os.environ.get("GITHUB_OWNER_TYPE", ""))
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=["preflight", "verify", "cleanup"])
     parser.add_argument("--digest")

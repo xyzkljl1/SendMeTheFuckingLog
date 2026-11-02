@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <Content Remove="appsettings.Local.json;appsettings.Runtime.json" />
+    <None Remove="appsettings.Local.json;appsettings.Runtime.json" />
     <Compile Remove="Tests/**/*.cs" />
     <Content Remove="Tests/**" />
     <None Remove="Tests/**" />

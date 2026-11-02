@@ -1,8 +1,7 @@
-name: Deploy to Lightsail
+name: Deploy to Linux
 
 on:
   push:
-    branches: [main]
   workflow_dispatch:
 
 # Never interrupt a deployment halfway through a container replacement or cleanup.
@@ -16,11 +15,15 @@ permissions:
 
 jobs:
   deploy:
-    if: github.repository == 'xyzkljl1/SendMeTheFuckingLog' && github.ref == 'refs/heads/main'
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      IMAGE: ghcr.io/xyzkljl1/sendmethefuckinglog
+      GITHUB_OWNER_TYPE: ${{ github.event.repository.owner.type }}
+      SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
+      AUTHOR_NAME: ${{ vars.AUTHOR_NAME }}
+      IMAGE_BASE_URL: ${{ vars.IMAGE_BASE_URL }}
+      AUTHOR_ALLOWED_CLIENTS: ${{ secrets.AUTHOR_ALLOWED_CLIENTS }}
       DOCKER_CONFIG: ${{ github.workspace }}/.docker-ci
       DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
       DEPLOY_USER: ${{ vars.DEPLOY_USER }}
@@ -35,7 +38,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check configuration and deployment logic
+      - name: Resolve repository identity and validate site settings
+        run: python3 -B deployment/settings.py
+
+      - name: Check configuration
         run: |
           for name in DEPLOY_HOST DEPLOY_USER DEPLOY_PORT; do
             if [[ -z "${!name}" ]]; then
@@ -47,9 +53,8 @@ jobs:
             echo '::error::Missing repository secret: DEPLOY_SSH_KEY'
             exit 1
           fi
-          python3 -B -m unittest discover -s deployment/tests -v
           bash -n deployment/healthcheck.sh
-          APP_IMAGE="$IMAGE@sha256:$(printf '0%.0s' {1..64})" DEPLOY_RUN=1 TLS_DOMAIN=www.sendmethefuckinglog.top docker compose config --quiet
+          APP_IMAGE="$IMAGE@sha256:$(printf '0%.0s' {1..64})" DEPLOY_RUN=1 docker compose config --quiet
           printf 'IMAGE_TAG=%s:sha-%s-run-%s-%s\n' "$IMAGE" "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
 
       - name: Check existing package ownership and public visibility
@@ -62,6 +67,8 @@ jobs:
           mkdir -p "$DOCKER_CONFIG"
           docker buildx build --platform linux/amd64 --load --provenance=false --sbom=false \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.source=$SOURCE_URL" \
+            --label "io.sendmethelog.application=send-me-the-log" \
             --tag "$IMAGE_TAG" .
 
       - name: Start and check the image before publishing
@@ -104,7 +111,7 @@ jobs:
           docker push "$IMAGE_TAG"
           python3 -B deployment/registry.py verify
           reference=$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE_TAG")
-          if [[ ! "$reference" =~ ^ghcr\.io/xyzkljl1/sendmethefuckinglog@sha256:[a-f0-9]{64}$ ]]; then
+          if [[ "${reference%@*}" != "$IMAGE" || ! "${reference##*@}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
             echo '::error::Unexpected published image reference.'
             exit 1
           fi

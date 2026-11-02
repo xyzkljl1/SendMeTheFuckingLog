@@ -10,6 +10,9 @@ using SendMeTheFuckingLog.Hosting;
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+    builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true)
+        .AddJsonFile("appsettings.Runtime.json", optional: true, reloadOnChange: true)
+        .AddEnvironmentVariables().AddCommandLine(args);
     using var https = new HttpsTransport(builder);
     builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(140));
     var storageLimits = builder.Configuration.GetSection("Storage").Get<StorageLimits>() ?? new StorageLimits();

@@ -1,14 +1,14 @@
 """Verify public DNS, port 443 and the trusted HTTPS endpoint from the GitHub runner."""
-import json
-from pathlib import Path
+import os
 import sys
 import urllib.error
 import urllib.request
+from settings import domain
 
 
 def main():
-    domain = json.loads(Path(__file__).with_name("tls.json").read_text(encoding="utf-8"))["Domain"]
-    url = "https://" + domain + "/"
+    host = domain(os.environ.get("SITE_DOMAIN", ""))
+    url = "https://" + host + "/"
     try:
         with urllib.request.urlopen(url, timeout=30) as response:
             if response.status != 200 or response.url != url:
