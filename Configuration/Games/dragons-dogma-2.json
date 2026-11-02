@@ -15,15 +15,19 @@
       ]
     },
     {
-      "zh": "在打开的游戏文件夹中，找到 re2_framework_log.txt，选中后拖入日志上传区域。它与游戏 EXE 位于同一层，不在 reframework 文件夹内。",
-      "en": "In the game folder, select re2_framework_log.txt and drag it into the log upload area. It is next to the game EXE, not inside the reframework folder.",
+      "zh": "在游戏文件夹中选中 re2_framework_log.txt，拖入日志上传区域。",
+      "en": "Select re2_framework_log.txt in the game folder and drag it into the log upload area.",
       "images": [
         "guides/navigate-dragons-dogma-2-reframework-log-{lang}.gif"
       ]
     },
     {
-      "zh": "只有作者要求时，才需添加同目录的 re2_fw_config.txt；排查崩溃时，作者也可能需要 reframework_crash.dmp。填写昵称后点击发送。没有日志时，请告知作者。",
-      "en": "Add re2_fw_config.txt from the same folder only if the author requests it. For a crash, the author may also request reframework_crash.dmp. Enter your nickname and click Send. If there is no log, tell the author."
+      "zh": "在游戏文件夹中选中 re2_fw_config.txt，拖入日志上传区域。（只有作者要求时才需要上传）",
+      "en": "Select re2_fw_config.txt in the game folder and drag it into the log upload area. (Only upload if the author requests it)"
+    },
+    {
+      "zh": "在游戏文件夹中选中 reframework_crash.dmp，拖入日志上传区域。（只有作者要求时才需要上传）",
+      "en": "Select reframework_crash.dmp in the game folder and drag it into the log upload area. (Only upload if the author requests it)"
     }
   ],
   "files": [

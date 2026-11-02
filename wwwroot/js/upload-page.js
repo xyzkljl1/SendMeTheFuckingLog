@@ -53,7 +53,8 @@
             cancelled: "已取消查找。你可以重新选择文件夹。", scanError: "无法完整读取文件夹，请检查访问权限后重试，或使用手动选择文件。",
             tooMany: "所选目录包含过多项目，请选择具体的游戏安装文件夹。", summary: "{count} 个文件 · {size}",
             missing: "尚未找到：{names}。缺少文件也可以保留已有选择。",
-            manualAdded: "已添加 {count} 个文件。", manualRejected: "已添加 {count} 个文件；忽略 {ignored} 个不匹配的文件，请按指引选择指定文件。",
+            manualAdded: "已添加 {count} 个文件。", manualRejected: "该文件不是该游戏所需的日志。",
+            manualPartiallyAdded: "已添加 {count} 个文件；其余文件不是该游戏所需的日志。",
             filesOnly: "请添加文件，不要添加文件夹。", pickGameFirst: "请先选择游戏。", selected: "已添加", notSelected: "尚未添加"
         },
         en: {
@@ -102,7 +103,8 @@
             cancelled: "Search cancelled. You can choose another folder.", scanError: "The folder could not be fully read. Check access permissions and try again, or choose files manually.",
             tooMany: "This folder contains too many items. Choose the specific game installation folder.", summary: "{count} files · {size}",
             missing: "Not found yet: {names}. You can keep the files you already selected.",
-            manualAdded: "Added {count} files.", manualRejected: "Added {count} files; skipped {ignored} unmatched files. Please choose the files listed in the guide.",
+            manualAdded: "Added {count} files.", manualRejected: "This file is not a log required for this game.",
+            manualPartiallyAdded: "Added {count} files. The remaining files are not logs required for this game.",
             filesOnly: "Please add files, not folders.", pickGameFirst: "Please choose a game first.", selected: "Added", notSelected: "Not added"
         }
     };
@@ -467,7 +469,8 @@
             state.manualFiles = state.manualFiles.filter(record => record.item.id !== item.id);
             state.manualFiles.push({ game, item, file }); count++;
         }
-        setStatus("manual", ignored ? "manualRejected" : "manualAdded", { count, ignored }, ignored > 0);
+        const message = ignored ? (count > 0 ? "manualPartiallyAdded" : "manualRejected") : "manualAdded";
+        setStatus("manual", message, { count }, ignored > 0);
         renderGuide(); renderSelection();
         if (count > 0 && !hadFiles) showNextStepHints();
     }

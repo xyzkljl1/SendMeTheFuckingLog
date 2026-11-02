@@ -10,13 +10,13 @@
       "images": ["guides/steam-open-palworld-{lang}.gif"]
     },
     {
-      "zh": "依次双击 Pal → Binaries → Win64。找到 UE4SS.log，选中后拖入日志上传区域；如果这里没有，请打开 ue4ss 文件夹查找。",
-      "en": "Double-click Pal → Binaries → Win64 in order. Select UE4SS.log and drag it into the log upload area. If it is not there, look inside the ue4ss folder.",
+      "zh": "依次打开 Pal → Binaries → Win64 → ue4ss，选中 UE4SS.log，拖入日志上传区域。",
+      "en": "Open Pal → Binaries → Win64 → ue4ss, select UE4SS.log and drag it into the log upload area.",
       "images": ["guides/navigate-palworld-ue4ss-log-{lang}.gif"]
     },
     {
-      "zh": "只有作者要求时，才需添加日志同目录的 UE4SS-settings.ini。填写昵称后点击发送。没有日志时，请告知作者；不要用其他文件代替。",
-      "en": "Add UE4SS-settings.ini from the same folder as the log only if the author requests it. Enter your nickname and click Send. If there is no log, tell the author; do not substitute another file."
+      "zh": "在日志所在文件夹中选中 UE4SS-settings.ini，拖入日志上传区域。（只有作者要求时才需要上传）",
+      "en": "Select UE4SS-settings.ini in the same folder as the log and drag it into the log upload area. (Only upload if the author requests it)"
     }
   ],
   "files": [
@@ -25,14 +25,14 @@
       "name": { "zh": "UE4SS 框架日志", "en": "UE4SS framework log" },
       "kind": "log",
       "isPrimary": true,
-      "paths": ["Pal/Binaries/Win64/UE4SS.log", "Pal/Binaries/Win64/ue4ss/UE4SS.log"]
+      "paths": ["Pal/Binaries/Win64/ue4ss/UE4SS.log"]
     },
     {
       "id": "ue4ss-settings",
       "name": { "zh": "UE4SS 框架配置", "en": "UE4SS framework settings" },
       "kind": "config",
       "isPrimary": false,
-      "paths": ["Pal/Binaries/Win64/UE4SS-settings.ini", "Pal/Binaries/Win64/ue4ss/UE4SS-settings.ini"]
+      "paths": ["Pal/Binaries/Win64/ue4ss/UE4SS-settings.ini"]
     }
   ]
 }

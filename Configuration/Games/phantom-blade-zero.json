@@ -5,18 +5,18 @@
   "executablePaths": ["platform/steam/PBZ.exe", "steam/PBZ.exe"],
   "instructions": [
     {
-      "zh": "打开游戏安装文件夹。如果通过 Steam 安装，可在库中右键点击游戏，选择「管理」→「浏览本地文件」。",
-      "en": "Open the game's installation folder. For a Steam installation, right-click the game in your library and choose Manage → Browse local files.",
+      "zh": "在 Steam 库中右键点击影之刃零，选择「管理」→「浏览本地文件」。",
+      "en": "Right-click Phantom Blade Zero in your Steam library and choose Manage → Browse local files.",
       "images": ["guides/steam-open-phantom-blade-zero-demo-{lang}.gif"]
     },
     {
-      "zh": "在打开的游戏文件夹中，依次双击 platform → steam → ue4ss，再单击选中 UE4SS.log（必需），将它拖入日志上传区域。",
-      "en": "In the game folder, double-click platform → steam → ue4ss in order. Then click UE4SS.log (required) to select it and drag it into the log upload area.",
+      "zh": "依次打开 platform → steam → ue4ss，选中 UE4SS.log，拖入日志上传区域。",
+      "en": "Open platform → steam → ue4ss, select UE4SS.log and drag it into the log upload area.",
       "images": ["guides/navigate-phantom-blade-zero-ue4ss-log-{lang}.gif"]
     },
     {
-      "zh": "只有作者要求时，才需添加同目录的 UE4SS-settings.ini。选好文件后，填写昵称并点击发送。",
-      "en": "Add UE4SS-settings.ini from the same folder only if the author requests it. Once your files are selected, enter your nickname and click Send."
+      "zh": "在日志所在文件夹中选中 UE4SS-settings.ini，拖入日志上传区域。（只有作者要求时才需要上传）",
+      "en": "Select UE4SS-settings.ini in the same folder as the log and drag it into the log upload area. (Only upload if the author requests it)"
     }
   ],
   "files": [

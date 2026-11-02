@@ -69,7 +69,7 @@
                                 <span class="drop-note" data-i18n="folderPrivacy">只发送需要的日志和配置，不会上传整个游戏。</span>
                             </div>
                             <p id="folder-status" class="status" role="status" aria-live="polite"></p>
-                            <div id="auto-selection-slot">
+                            <div id="auto-selection-slot" class="selection-slot">
                                 <section id="selection-section" class="selection-section" hidden aria-labelledby="selection-title">
                                     <div id="detected-game-info" class="detected-game-info" hidden></div>
                                     <div class="selection-heading"><h3 id="selection-title" data-i18n="selectedFiles">已选择的文件</h3><span id="selection-summary"></span></div>
@@ -100,10 +100,10 @@
                             <button type="button" class="primary-button" id="choose-files" data-i18n="chooseFiles">选择日志和配置文件</button>
                             <input id="file-input" type="file" multiple hidden />
                         </div>
+                        <p id="manual-status" class="status" role="status" aria-live="polite"></p>
+                        <div id="manual-selection-slot" class="selection-slot"></div>
                     </div>
                 </div>
-                <p id="manual-status" class="status" role="status" aria-live="polite"></p>
-                <div id="manual-selection-slot"></div>
             </section>
 
             <div id="upload-next-steps">
