@@ -12,8 +12,7 @@ import time
 
 ROOT = Path("/opt/send-me-the-log")
 APP = "send-me-the-log"
-LABEL = "io.sendmethelog.application"
-LEGACY_LABEL = ""
+LABEL = ""
 CERTBOT = "certbot/certbot@sha256:bc93cb710b413e6b456d622f9b0133b3e109c0a78c2ed9976af43d209b0a1805"
 CERTBOT_NAME = APP + "-certbot"
 
@@ -83,8 +82,7 @@ def remove_stale_certbot():
     if not ids:
         return
     info = json.loads(run("docker", "inspect", ids, stdout=subprocess.PIPE).stdout)[0]
-    labels = info["Config"].get("Labels") or {}
-    if labels.get(LABEL) != APP and labels.get(LEGACY_LABEL) != APP:
+    if (info["Config"].get("Labels") or {}).get(LABEL) != APP:
         raise RuntimeError("Refusing to remove an unrelated Certbot container.")
     run("docker", "rm", "--force", ids, stdout=subprocess.DEVNULL)
 
@@ -224,6 +222,7 @@ def ensure_certificate(domain):
 
 def main():
     import fcntl
+    global LABEL
 
     if os.geteuid() != 0:
         raise RuntimeError("Certificate renewal requires root.")
@@ -236,6 +235,13 @@ def main():
         except BlockingIOError:
             print("TLS: deployment is in progress; it will check the certificate.")
             return
+        image_env = ROOT / "image.env"
+        plain(image_env)
+        values = dict(line.split("=", 1) for line in image_env.read_text(encoding="utf-8").splitlines() if "=" in line)
+        owner = values.get("REPOSITORY_OWNER", "")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", owner):
+            raise ValueError("Missing or invalid repository owner in deployment environment.")
+        LABEL = f"io.github.{owner}.application"
         config = ROOT / "tls" / "tls.json"
         plain(config)
         ensure_certificate(settings(config.read_text(encoding="utf-8")))

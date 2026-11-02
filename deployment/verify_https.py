@@ -1,13 +1,17 @@
 """Verify public DNS, port 443 and the trusted HTTPS endpoint from the GitHub runner."""
-import os
 import sys
 import urllib.error
 import urllib.request
-from settings import domain
+from pathlib import Path
+from tls_manager import settings
+
+
+def load_tls_domain():
+    return settings(Path(__file__).with_name("tls.json").read_text(encoding="utf-8"))
 
 
 def main():
-    host = domain(os.environ.get("SITE_DOMAIN", ""))
+    host = load_tls_domain()
     url = "https://" + host + "/"
     try:
         with urllib.request.urlopen(url, timeout=30) as response:

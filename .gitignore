@@ -14,5 +14,3 @@ __pycache__/
 .ssh-*/
 .smoke/
 GifGuideGenerator/output/
-appsettings.Local.json
-appsettings.Runtime.json

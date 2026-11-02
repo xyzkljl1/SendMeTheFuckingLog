@@ -20,5 +20,3 @@
 !deployment/
 !deployment/healthcheck.sh
 !Dockerfile
-appsettings.Local.json
-appsettings.Runtime.json

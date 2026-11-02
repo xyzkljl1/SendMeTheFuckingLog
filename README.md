@@ -29,9 +29,9 @@
 
 ## 配置自己的网站
 
-[appsettings.json](appsettings.json) 保存容量、请求限额和页面默认配置。作者名称、图片托管地址和后台白名单通过下文的 GitHub 变量及密钥设置。
+[appsettings.json](appsettings.json) 设置作者名称、图片托管地址、后台白名单、容量和请求限额。本机运行和部署使用同一份设置。
 
-本机使用根目录的 `appsettings.Local.json` 覆盖相同配置项，该文件已加入 Git 忽略。部署时生成独立的 `appsettings.Runtime.json`，以只读文件挂载到容器。环境变量和命令行参数优先级最高。
+在 [deployment/tls.json](deployment/tls.json) 的 `Domain` 中填写网站域名，例如 `logs.example.com`，用于证书签发、续期和 HTTPS 访问检查。
 
 | 配置项 | 用途 |
 | --- | --- |
@@ -65,8 +65,8 @@
 所有界面图片和动图从独立托管地址加载，访客直接访问图片服务，减少应用服务器的出站流量。可使用 Cloudflare Pages 托管仓库中的 [wwwroot/images](wwwroot/images)。
 
 1. 在 Cloudflare 中创建 **Pages** 项目，连接自己的 GitHub 仓库。
-2. 生产分支选择仓库默认分支，框架选择 `None`，构建命令填写 `exit 0`，构建输出目录填写 `wwwroot/images`，根目录使用仓库根目录。详见 [Cloudflare 官方指南](https://developers.cloudflare.com/pages/framework-guides/deploy-anything/)。
-3. 部署完成后，将获得的 HTTPS 域名填入 GitHub 变量 `IMAGE_BASE_URL`；本机填入 `ImageHosting.BaseUrl`。
+2. 生产分支选择 `main`，框架选择 `None`，构建命令填写 `exit 0`，构建输出目录填写 `wwwroot/images`，根目录使用仓库根目录。详见 [Cloudflare 官方指南](https://developers.cloudflare.com/pages/framework-guides/deploy-anything/)。
+3. 部署完成后，将获得的 HTTPS 域名填入 `ImageHosting.BaseUrl`。
 4. 游戏封面和指引图片填写相对于图片根目录的路径，例如 `games/cover.webp`。
 5. 中英文指引可以填写一次 `guides/open-folder-{lang}.gif`，并提供对应的 `-zh.gif`、`-en.gif` 文件；不含 `{lang}` 时两种语言共用同一图片。
 
@@ -92,7 +92,7 @@
 
 ## GitHub 自动部署
 
-工作流自动使用当前仓库、所有者和默认分支，镜像地址为 `ghcr.io/所有者/仓库名`（小写），支持个人和组织仓库。
+工作流使用当前个人账号下的仓库，自动获取所有者和仓库名，镜像地址为 `ghcr.io/所有者/仓库名`（小写），部署分支为 `main`。
 
 ### 1. 设置 GitHub 变量和密钥
 
@@ -103,17 +103,13 @@
 | Variable | `DEPLOY_HOST` | 服务器主机名或公网 IPv4 地址 |
 | Variable | `DEPLOY_USER` | SSH 登录用户名 |
 | Variable | `DEPLOY_PORT` | SSH 端口，即使使用默认端口也要填写 |
-| Variable | `SITE_DOMAIN` | 网站域名，例如 `logs.example.com` |
-| Variable | `AUTHOR_NAME` | 上传页面显示的收件作者名称 |
-| Variable | `IMAGE_BASE_URL` | 图片托管的 HTTPS 域名，例如 `https://images.example.com` |
-| Secret | `AUTHOR_ALLOWED_CLIENTS` | 后台白名单 JSON 数组，例如 `["author.example.com", "203.0.113.10"]`；留空拒绝所有访问 |
 | Secret | `DEPLOY_SSH_KEY` | 用于部署的 SSH 私钥内容，对应公钥需已安装到服务器 |
 
 镜像包须为 **Public**，关联当前仓库并授予其 Actions 管理权限。首次推送若创建成 Private，在包设置中改为 Public 后重新运行工作流。设置方法见 [GitHub 包权限说明](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility)。
 
 ### 2. 部署与验证
 
-将配置和修改推送到仓库默认分支，或在 Actions 中手动运行部署工作流。流程会：
+将配置和修改推送到 `main`，或在 Actions 中选择 `main` 手动运行部署工作流。流程会：
 
 1. 检查配置，在 GitHub 上构建镜像并运行启动、HTTPS 测试。
 2. 发布镜像，通过 SSH 在服务器安装流量监控和证书续期任务。
@@ -133,7 +129,7 @@
 
 ## 本机运行
 
-安装 .NET 10 SDK，在 `appsettings.Local.json` 中填写作者名称、图片域名和后台白名单，然后在仓库根目录执行：
+安装 .NET 10 SDK，在 `appsettings.json` 中填写作者名称、图片域名和后台白名单，然后在仓库根目录执行：
 
 ```sh
 dotnet run --configuration Debug --no-launch-profile --urls http://localhost:5180

@@ -6,19 +6,19 @@ import re
 import sys
 import urllib.error
 import urllib.request
-from settings import load_identity
 
 OWNER = PACKAGE = REPOSITORY = IMAGE = API = ""
 DIGEST = re.compile(r"sha256:[a-f0-9]{64}")
 
 
-def configure(deployment, owner_type):
+def configure(repository):
     global OWNER, PACKAGE, REPOSITORY, IMAGE, API
-    if owner_type not in ("User", "Organization"):
-        raise ValueError("GitHub repository owner type is missing or unsupported.")
-    OWNER, PACKAGE, REPOSITORY, IMAGE = (deployment[key] for key in ("owner", "package", "repository", "image"))
-    segment = "orgs" if owner_type == "Organization" else "users"
-    API = f"https://api.github.com/{segment}/{OWNER}/packages/container/{PACKAGE}"
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9][A-Za-z0-9_.-]*", repository):
+        raise ValueError("GITHUB_REPOSITORY must identify the deploying repository.")
+    REPOSITORY = repository
+    OWNER, PACKAGE = repository.lower().split("/", 1)
+    IMAGE = "ghcr.io/" + repository.lower()
+    API = f"https://api.github.com/users/{OWNER}/packages/container/{PACKAGE}"
 
 
 def api(path="", method="GET", allow_missing=False):
@@ -83,7 +83,7 @@ def cleanup_plan(items, keep_digest):
 
 
 def main():
-    configure(load_identity(), os.environ.get("GITHUB_OWNER_TYPE", ""))
+    configure(os.environ.get("GITHUB_REPOSITORY", ""))
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=["preflight", "verify", "cleanup"])
     parser.add_argument("--digest")
