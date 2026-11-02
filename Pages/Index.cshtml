@@ -32,6 +32,7 @@
         <section class="intro" aria-labelledby="page-title">
             <h1 id="page-title" data-i18n="title">上传日志</h1>
             <p class="intro-copy"><span data-i18n="recipientBefore">文件将交给作者</span> <strong id="author-name"></strong><span data-i18n="recipientAfter">，用于排查 Mod 问题。</span></p>
+            <p class="supported-line"><span data-i18n="supported">当前支持：</span><span id="supported-games"></span></p>
         </section>
 
         <noscript><p class="notice">请启用 JavaScript 以使用文件选择和语言切换。Please enable JavaScript to use this page.</p></noscript>
@@ -67,7 +68,14 @@
                                 <span class="drop-note" data-i18n="folderPrivacy">不会上传整个文件夹，只会上传匹配到的日志和配置文件。</span>
                             </div>
                             <p id="folder-status" class="status" role="status" aria-live="polite"></p>
-                            <p class="supported-line"><span data-i18n="supported">当前支持：</span><span id="supported-games"></span></p>
+                            <div id="auto-selection-slot">
+                                <section id="selection-section" class="selection-section" hidden aria-labelledby="selection-title">
+                                    <div id="detected-game-info" class="detected-game-info" hidden></div>
+                                    <div class="selection-heading"><h3 id="selection-title" data-i18n="selectedFiles">已选择的文件</h3><span id="selection-summary"></span></div>
+                                    <ul id="selected-files" class="file-list"></ul>
+                                    <p id="missing-files" class="hint"></p>
+                                </section>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -77,11 +85,11 @@
 
             <section id="manual-panel" aria-labelledby="manual-heading" hidden>
                 <div class="step-heading"><span class="step-number">1</span><div><h2 id="manual-heading" data-i18n="gameHeading">选择游戏</h2></div></div>
-                <fieldset id="manual-game-choice" class="game-picker">
-                    <legend class="field-label" data-i18n="gameLabel">游戏</legend>
+                <fieldset id="manual-game-choice" class="game-picker" aria-labelledby="manual-heading">
                     <div id="game-cards" class="game-grid"></div>
                 </fieldset>
                 <div id="game-guide" class="guide-layout manual-guide-layout" hidden>
+                    <div class="step-heading manual-upload-heading"><span class="step-number">2</span><div><h2 data-i18n="uploadHeading">上传日志</h2></div></div>
                     <div class="guide-box"><h3 data-i18n="guideHeading">文件位置</h3><ol id="guide-steps"></ol></div>
                     <div class="guide-actions">
                         <div id="expected-files" class="expected-files"></div>
@@ -94,24 +102,21 @@
                     </div>
                 </div>
                 <p id="manual-status" class="status" role="status" aria-live="polite"></p>
+                <div id="manual-selection-slot"></div>
             </section>
 
-            <section id="selection-section" class="selection-section" hidden aria-labelledby="selection-title">
-                <div id="detected-game-info" class="detected-game-info" hidden></div>
-                <div class="selection-heading"><h3 id="selection-title" data-i18n="selectedFiles">已选择的文件</h3><span id="selection-summary"></span></div>
-                <ul id="selected-files" class="file-list"></ul>
-                <p id="missing-files" class="hint"></p>
-            </section>
+            <div id="upload-next-steps">
+                <section class="identity-section" aria-labelledby="nickname-heading">
+                    <div class="step-heading"><span class="step-number" id="nickname-step-number">2</span><div><h2 id="nickname-heading" data-i18n="nicknameHeading">填写昵称</h2></div></div>
+                    <div id="nickname-target" class="attention-target nickname-target">
+                        <span class="attention-arrow" aria-hidden="true">⬇</span>
+                        <label for="nickname" class="nickname-input-label" data-i18n="nicknameInputLabel">输入昵称：</label>
+                        <input id="nickname" name="nickname" type="text" maxlength="60" autocomplete="off" spellcheck="false" required placeholder="能分辨上传者即可，N站来的就填N站id" />
+                    </div>
+                </section>
 
-            <section class="identity-section" aria-labelledby="nickname-heading">
-                <div class="step-heading"><span class="step-number">2</span><div><h2 id="nickname-heading" data-i18n="nicknameHeading">填写昵称</h2></div></div>
-                <div id="nickname-target" class="attention-target nickname-target">
-                    <span class="attention-arrow" aria-hidden="true">↓</span>
-                    <input id="nickname" name="nickname" type="text" aria-labelledby="nickname-heading" maxlength="60" autocomplete="off" spellcheck="false" required placeholder="能分辨上传者即可，N站来的就填N站id" />
-                </div>
-            </section>
-
-            <div class="send-section"><p id="upload-limits" class="hint"></p><div id="send-target" class="attention-target"><span class="attention-arrow" aria-hidden="true">↓</span><button type="button" id="send-files" class="send-button" disabled>发送文件</button></div></div>
+                <div class="send-section"><p id="upload-limits" class="hint"></p><div id="send-target" class="attention-target"><span class="attention-arrow" aria-hidden="true">⬇</span><button type="button" id="send-files" class="send-button" disabled>发送文件</button></div></div>
+            </div>
             <progress id="upload-progress" max="100" value="0" hidden></progress>
             <p id="upload-status" class="status" role="status" aria-live="polite"></p>
             <div id="upload-receipt" class="notice" hidden><strong data-i18n="receiptHeading">提交编号</strong><code id="submission-id"></code><p data-i18n="receiptHint">把这个编号告诉作者，方便找到你的文件。</p></div>

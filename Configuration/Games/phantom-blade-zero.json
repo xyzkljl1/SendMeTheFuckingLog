@@ -24,12 +24,14 @@
       "id": "ue4ss-log",
       "name": { "zh": "UE4SS 框架日志", "en": "UE4SS framework log" },
       "kind": "log",
+      "isPrimary": true,
       "paths": ["platform/steam/ue4ss/UE4SS.log"]
     },
     {
       "id": "ue4ss-settings",
       "name": { "zh": "UE4SS 框架配置", "en": "UE4SS framework settings" },
       "kind": "config",
+      "isPrimary": false,
       "paths": ["platform/steam/ue4ss/UE4SS-settings.ini"]
     }
   ]

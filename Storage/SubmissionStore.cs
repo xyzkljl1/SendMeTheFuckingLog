@@ -195,6 +195,7 @@ public sealed class SubmissionStore : IDisposable
     {
         var game = catalog.Games.FirstOrDefault(game => game.Id == description.GameId && !game.IsDemo)
             ?? throw new UploadFailure("unsupportedGame");
+        if (description.SelectionMode is not ("auto" or "manual")) throw new UploadFailure("invalidSubmission");
         if (string.IsNullOrWhiteSpace(description.Nickname) || description.Nickname.Length > 60
             || description.Nickname.Any(char.IsControl)) throw new UploadFailure("invalidNickname");
         if (description.Files is not { Length: > 0 and <= MaxFiles }) throw new UploadFailure("invalidSubmission");
@@ -214,6 +215,8 @@ public sealed class SubmissionStore : IDisposable
             if (file.Size > limits.FileBytes || file.Size > limits.SubmissionBytes - total) throw new UploadFailure("tooLarge", 413);
             total += file.Size;
         }
+        if (description.SelectionMode == "manual" && game.Files.Any(file => file.IsPrimary && !items.Contains(file.Id)))
+            throw new UploadFailure("missingRequired");
         return game;
     }
 

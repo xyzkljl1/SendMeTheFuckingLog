@@ -24,10 +24,13 @@
             duplicateFiles: "找到多份相同的诊断文件或游戏目录。请只拖入一份游戏安装的内容。",
             cancelScan: "取消查找", autoHelp: "请确认选择的是游戏安装文件夹。日志可能尚未生成，也可能位于所选目录之外。",
             viewManual: "查看手动查找指引 →", gameHeading: "选择游戏",
-            gameLabel: "游戏", chooseGame: "请选择游戏", noGames: "暂未配置支持的游戏", guideHeading: "文件位置", demo: "演示", demoOnly: "此游戏仅用于展示控件，不提供文件上传。",
+            uploadHeading: "上传日志", chooseGame: "请选择游戏", noGames: "暂未配置支持的游戏", guideHeading: "文件位置", demo: "演示", demoOnly: "此游戏仅用于展示控件，不提供文件上传。",
             dropFiles: "把找到的日志和配置文件拖到这里", multipleFiles: "可以选择多个文件，也可以分多次添加。",
+            primaryFile: "主要 · 必需", secondaryFile: "次要", secondaryNote: "（只有作者要求时才需要上传）",
+            missingRequired: "请先添加全部主要日志。", missingPrimary: "尚未添加主要日志：{names}。",
             chooseFiles: "选择日志和配置文件", selectedFiles: "已选择的文件",
             nicknameHeading: "填写昵称",
+            nicknameInputLabel: "输入昵称：",
             nicknamePlaceholder: "能分辨上传者即可，N站来的就填N站id",
             send: "发送给 {author}", sent: "已保存",
             limits: "单个文件不超过 {file}，一次提交合计不超过 {total}。",
@@ -70,10 +73,13 @@
             duplicateFiles: "Multiple copies of a diagnostic file or game folder were found. Drop the contents of just one game installation.",
             cancelScan: "Cancel search", autoHelp: "Check that you selected the game’s installation folder. Logs may not exist yet, or may be outside this folder.",
             viewManual: "Show the manual guide →", gameHeading: "Choose your game",
-            gameLabel: "Game", chooseGame: "Choose a game", noGames: "No supported games configured yet", guideHeading: "File locations", demo: "Demo", demoOnly: "This game is a selection preview. File uploads are unavailable.",
+            uploadHeading: "Upload logs", chooseGame: "Choose a game", noGames: "No supported games configured yet", guideHeading: "File locations", demo: "Demo", demoOnly: "This game is a selection preview. File uploads are unavailable.",
             dropFiles: "Drop your logs and configuration files here", multipleFiles: "Select multiple files, or add them in separate steps.",
+            primaryFile: "Primary · Required", secondaryFile: "Secondary", secondaryNote: "(Only upload if the author requests it)",
+            missingRequired: "Add all primary logs before sending.", missingPrimary: "Missing primary logs: {names}.",
             chooseFiles: "Choose logs and settings", selectedFiles: "Selected files",
             nicknameHeading: "Enter your nickname",
+            nicknameInputLabel: "Nickname:",
             nicknamePlaceholder: "Use a name that identifies you. If you're from Nexus Mods, enter your Nexus Mods ID.",
             send: "Send to {author}", sent: "Saved",
             limits: "Up to {file} per file and {total} per submission.",
@@ -113,6 +119,18 @@
     const sizeText = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
     const make = (tag, className, value) => { const element = document.createElement(tag); element.className = className; if (value !== undefined) element.textContent = value; return element; };
     const currentFiles = () => state.route === "auto" ? state.autoFiles : state.manualFiles;
+    function updateGameNames(container, game) {
+        const primary = container.querySelector(".game-name-primary");
+        const secondary = container.querySelector(".game-name-secondary");
+        primary.textContent = local(game.name);
+        secondary.textContent = game.name[state.language === "zh" ? "en" : "zh"];
+        primary.lang = state.language === "zh" ? "zh-CN" : "en";
+        secondary.lang = state.language === "zh" ? "en" : "zh-CN";
+    }
+    function appendGameNames(container, game) {
+        container.append(make("strong", "game-name-primary"), make("span", "game-name-secondary"));
+        updateGameNames(container, game);
+    }
     function renderGameCards(containerId, choices, group, selected, onChange) {
         const container = $(containerId);
         const cardsKey = JSON.stringify(choices.map(({ game, value }) => [game.id, game.image, value]));
@@ -122,6 +140,7 @@
                 radio.checked = radio.value === selected;
                 radio.closest(".game-card").classList.toggle("selected", radio.checked);
             }
+            container.querySelectorAll(".game-card-names").forEach((names, index) => updateGameNames(names, choices[index].game));
             for (const badge of container.querySelectorAll(".demo-badge")) badge.textContent = text("demo");
             if (!choices.length) container.querySelector(".hint").textContent = text("noGames");
             return;
@@ -146,8 +165,7 @@
                 image.src = game.image; cover.append(image);
             }
             const names = make("span", "game-card-names");
-            const zh = make("strong", "", game.name.zh), en = make("span", "", game.name.en);
-            zh.lang = "zh-CN"; en.lang = "en"; names.append(zh, en);
+            appendGameNames(names, game);
             if (game.isDemo) names.append(make("span", "demo-badge", text("demo")));
             card.append(radio, cover, names); container.append(card);
             radio.addEventListener("change", () => {
@@ -177,10 +195,11 @@
             const timer = setTimeout(() => {
                 target.classList.remove("attention-active");
                 attentionTimers.delete(timer);
-            }, 3600);
+            }, 6000);
             attentionTimers.add(timer);
         };
-        // Start each one-off cue when its control is visible, without moving the page.
+        // Bring both next steps into view before starting the one-off arrows.
+        $("upload-next-steps").scrollIntoView({ behavior: "instant", block: "nearest" });
         if (typeof IntersectionObserver === "undefined") {
             for (const id of ["nickname-target", "send-target"]) highlight($(id));
             return;
@@ -198,6 +217,10 @@
         const files = currentFiles();
         const nickname = $("nickname").value.trim();
         if (state.route === "manual" && games.find(game => game.id === state.manualGame)?.isDemo) return "demoOnly";
+        if (state.route === "manual") {
+            const game = games.find(game => game.id === state.manualGame);
+            if (game?.files.some(item => item.isPrimary && !files.some(record => record.item.id === item.id))) return "missingRequired";
+        }
         if (!files.length) return "noFiles";
         if (new Set(files.map(record => record.game.id)).size !== 1) return "oneGame";
         if (!nickname || nickname.length > 60 || /[\u0000-\u001f\u007f-\u009f]/.test(nickname)) return "invalidNickname";
@@ -211,7 +234,7 @@
         button.textContent = state.sending ? text(state.progress === null ? "preparing" : state.progress === 100 ? "saving" : "uploading", { percent: state.progress || 0 })
             : state.submitted ? text("sent") : text("send", { author: config.authorName });
         // Require a nickname before sending; other validation errors can still explain how to fix the selection.
-        button.disabled = !$("nickname").value.trim() || state.sending || state.scanning || state.submitted || invalid === "demoOnly" || (state.route === "auto" && !state.recognizedGame);
+        button.disabled = !$("nickname").value.trim() || state.sending || state.scanning || state.submitted || invalid === "demoOnly" || invalid === "missingRequired" || (state.route === "auto" && !state.recognizedGame);
         $("upload-limits").textContent = text("limits", { file: sizeText(config.maxFileBytes), total: sizeText(config.maxSubmissionBytes) });
         const status = state.uploadStatus;
         $("upload-status").textContent = status ? text(status.key, status.args) : (invalid === "tooLarge" || invalid === "oneGame" ? text(invalid) : "");
@@ -270,8 +293,7 @@
         }
         const names = make("div", "detected-game-names");
         names.append(make("span", "hint", text("detectedGame")));
-        const zh = make("strong", "", game.name.zh), en = make("span", "", game.name.en);
-        zh.lang = "zh-CN"; en.lang = "en"; names.append(zh, en);
+        appendGameNames(names, game);
         container.append(names);
     }
     function renderGuideImages(container, images, description) {
@@ -317,10 +339,12 @@
             }
         }
         if (!game) return;
-        for (const item of game.files) {
+        for (const item of [...game.files].sort((a, b) => Number(Boolean(b.isPrimary)) - Number(Boolean(a.isPrimary)))) {
             const row = make("div", "expected-file");
             const heading = make("div", "expected-file-heading");
-            heading.append(make("strong", "", local(item.name)), make("span", "kind-badge", text(item.kind)));
+            heading.append(make("strong", "", local(item.name)), make("span", "kind-badge", text(item.kind)),
+                make("span", item.isPrimary ? "kind-badge primary-file-badge" : "kind-badge", text(item.isPrimary ? "primaryFile" : "secondaryFile")));
+            if (!item.isPrimary) heading.append(make("span", "secondary-file-note", text("secondaryNote")));
             if (state.manualFiles.some(file => file.item.id === item.id)) heading.append(make("span", "kind-badge", text("selected")));
             row.append(heading);
             for (const path of item.paths) {
@@ -340,6 +364,9 @@
     }
     function renderSelection() {
         const files = currentFiles();
+        const selection = $("selection-section");
+        const slot = $(state.route === "auto" ? "auto-selection-slot" : "manual-selection-slot");
+        if (selection.parentElement !== slot) slot.append(selection);
         $("selection-section").hidden = !files.length && !(state.route === "auto" && state.recognizedGame);
         renderDetectedGame();
         $("selected-files").replaceChildren();
@@ -352,8 +379,8 @@
             $("selected-files").append(row);
         }
         const relevant = state.route === "manual" ? games.filter(game => game.id === state.manualGame) : games.filter(game => game.id === state.recognizedGame?.id);
-        const missing = relevant.flatMap(game => game.files.filter(item => !files.some(file => file.game.id === game.id && file.item.id === item.id)).map(item => local(item.name)));
-        $("missing-files").textContent = missing.length ? text("missing", { names: missing.join(state.language === "zh" ? "、" : ", ") }) : "";
+        const missing = relevant.flatMap(game => game.files.filter(item => (state.route !== "manual" || item.isPrimary) && !files.some(file => file.game.id === game.id && file.item.id === item.id)).map(item => local(item.name)));
+        $("missing-files").textContent = missing.length ? text(state.route === "manual" ? "missingPrimary" : "missing", { names: missing.join(state.language === "zh" ? "、" : ", ") }) : "";
         renderUpload();
     }
     function render() {
@@ -363,6 +390,7 @@
         document.querySelectorAll("[data-language]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.language === state.language)));
         $("author-name").textContent = config.authorName;
         $("nickname").placeholder = text("nicknamePlaceholder");
+        $("nickname-step-number").textContent = state.route === "manual" ? "3" : "2";
         renderGuideImages($("automatic-guide"), config.automaticGuideImages || [], text("automaticGuideAlt"));
         const supported = games.filter(game => !game.isDemo);
         $("supported-games").textContent = supported.length ? supported.map(gameName).join(" · ") : text("noGames");
@@ -524,7 +552,7 @@
                 files.push({ itemId: record.item.id, fileName: record.file.name, size: record.file.size, sha256 });
             }
             const form = new FormData();
-            form.append("metadata", JSON.stringify({ gameId: records[0].game.id, nickname, files }));
+            form.append("metadata", JSON.stringify({ gameId: records[0].game.id, nickname, files, selectionMode: state.route }));
             records.forEach((record, index) => form.append("file" + index, record.file, record.file.name));
             await new Promise(resolve => {
                 const xhr = new XMLHttpRequest();
@@ -543,7 +571,7 @@
                         state.submitted = true; state.receipt = response.submissionId;
                         uploadStatus("success", { count: response.fileCount });
                     } else {
-                        const knownErrors = ["tooLarge", "busy", "siteBusy", "storageFull", "storageFailed", "invalidSubmission", "invalidFile", "unsupportedGame", "incompleteUpload", "refreshPage", "invalidNickname", "unknownResult"];
+                        const knownErrors = ["tooLarge", "busy", "siteBusy", "storageFull", "storageFailed", "invalidSubmission", "invalidFile", "unsupportedGame", "incompleteUpload", "refreshPage", "invalidNickname", "missingRequired", "unknownResult"];
                         const key = knownErrors.includes(response.error) ? response.error : xhr.status === 413 ? "tooLarge" : "unknownResult";
                         uploadStatus(key, {}, true);
                     }

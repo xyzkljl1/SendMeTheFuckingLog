@@ -14,7 +14,7 @@ public sealed record GuideInstruction(string Zh, string En, string[]? Images = n
 {
     public LocalizedText[] ImageUrls { get; init; } = [];
 }
-public sealed record DiagnosticFile(string Id, LocalizedText Name, string Kind, string[] Paths);
+public sealed record DiagnosticFile(string Id, LocalizedText Name, string Kind, string[] Paths, bool IsPrimary = false);
 public sealed record SupportedGame(
     string Id, LocalizedText Name, GuideInstruction[] Instructions, DiagnosticFile[] Files, string[] ExecutablePaths,
     string? Image = null, bool IsDemo = false);
