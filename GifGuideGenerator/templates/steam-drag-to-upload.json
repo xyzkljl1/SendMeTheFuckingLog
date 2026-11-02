@@ -1,0 +1,563 @@
+{
+  "schemaVersion": 1,
+  "description": {
+    "zh": "Steam 打开目录，鼠标框选全部内容，再拖入实际上传页面；提示也可 Ctrl+A 全选。截图演示，不执行上传。",
+    "en": "Open the directory in Steam, marquee-select all items, then drag into the captured upload page. Ctrl+A is shown as an alternative. Illustration only; no upload is performed."
+  },
+  "canvas": [
+    1238,
+    1020
+  ],
+  "frameMs": 120,
+  "outputName": "steam-drag-{game.id}-{lang}",
+  "layout": {
+    "submenuX": {
+      "zh": 491,
+      "en": 524
+    },
+    "submenuCross": {
+      "zh": [
+        556,
+        617
+      ],
+      "en": [
+        589,
+        617
+      ]
+    },
+    "browseCursor": {
+      "zh": [
+        595,
+        682
+      ],
+      "en": [
+        628,
+        682
+      ]
+    },
+    "selectionStart": [
+      650,
+      680
+    ],
+    "selectionEnd": [
+      68,
+      202
+    ],
+    "selectionRows": [
+      [
+        66,
+        210,
+        1228,
+        254
+      ],
+      [
+        66,
+        262,
+        1228,
+        306
+      ],
+      [
+        66,
+        314,
+        1228,
+        358
+      ],
+      [
+        66,
+        366,
+        1228,
+        410
+      ],
+      [
+        66,
+        418,
+        1228,
+        462
+      ],
+      [
+        66,
+        470,
+        1228,
+        514
+      ]
+    ]
+  },
+  "scenes": {
+    "library": {
+      "layers": [
+        {
+          "type": "image",
+          "path": "assets/steam/{lang}/library.png",
+          "at": [
+            0,
+            0
+          ]
+        },
+        {
+          "type": "rectangle",
+          "box": [
+            0,
+            378,
+            619,
+            421
+          ],
+          "fill": "#23282f"
+        },
+        {
+          "type": "image",
+          "path": "{game.icon}",
+          "at": [
+            29,
+            383
+          ],
+          "size": [
+            36,
+            36
+          ]
+        },
+        {
+          "type": "text",
+          "value": "{game.name}",
+          "at": [
+            73,
+            384
+          ],
+          "size": 22,
+          "maxWidth": 538,
+          "fill": "#edf0f5"
+        }
+      ]
+    },
+    "context": {
+      "extends": "library",
+      "layers": [
+        {
+          "type": "rectangle",
+          "box": [
+            1,
+            378,
+            619,
+            421
+          ],
+          "outline": "#6a8fb3",
+          "width": 2
+        },
+        {
+          "type": "image",
+          "path": "assets/steam/{lang}/context-menu.png",
+          "at": [
+            285,
+            407
+          ]
+        }
+      ]
+    },
+    "submenu": {
+      "extends": "library",
+      "layers": [
+        {
+          "type": "rectangle",
+          "box": [
+            1,
+            378,
+            619,
+            421
+          ],
+          "outline": "#6a8fb3",
+          "width": 2
+        },
+        {
+          "type": "image",
+          "path": "assets/steam/{lang}/context-manage.png",
+          "at": [
+            285,
+            407
+          ]
+        },
+        {
+          "type": "image",
+          "path": "assets/steam/{lang}/manage-menu.png",
+          "at": [
+            "{layout.submenuX}",
+            589
+          ]
+        }
+      ]
+    },
+    "browse": {
+      "extends": "submenu",
+      "layers": [
+        {
+          "type": "image",
+          "path": "assets/steam/{lang}/manage-browse.png",
+          "at": [
+            "{layout.submenuX}",
+            589
+          ]
+        }
+      ]
+    },
+    "directory": {
+      "layers": [
+        {
+          "type": "image",
+          "path": "{game.directoryImage}",
+          "at": [
+            0,
+            0
+          ],
+          "size": [
+            1238,
+            1020
+          ]
+        }
+      ]
+    },
+    "selected": {
+      "layers": [
+        {
+          "type": "image",
+          "path": "{game.selectedDirectoryImage}",
+          "at": [
+            0,
+            0
+          ],
+          "size": [
+            1238,
+            1020
+          ]
+        },
+        {
+          "type": "rectangle",
+          "box": [
+            720,
+            800,
+            1200,
+            935
+          ],
+          "fill": "#253b40"
+        },
+        {
+          "type": "text",
+          "value": {
+            "zh": "按住鼠标左键，框选全部内容",
+            "en": "Hold left mouse button and select all"
+          },
+          "at": [
+            740,
+            818
+          ],
+          "size": 25,
+          "maxWidth": 440
+        },
+        {
+          "type": "text",
+          "value": {
+            "zh": "也可以按 Ctrl+A 全选",
+            "en": "Or press Ctrl+A to select all"
+          },
+          "at": [
+            740,
+            877
+          ],
+          "size": 24,
+          "maxWidth": 440
+        }
+      ]
+    },
+    "upload-ready": {
+      "layers": [
+        {
+          "type": "image",
+          "path": "assets/upload/page-{lang}.png",
+          "crop": [
+            0,
+            0,
+            1265,
+            1042
+          ],
+          "at": [
+            0,
+            0
+          ],
+          "size": [
+            1238,
+            1020
+          ]
+        },
+        {
+          "type": "rectangle",
+          "box": [
+            7,
+            319,
+            700,
+            891
+          ],
+          "fill": "#697a7d"
+        },
+        {
+          "type": "image",
+          "path": "{game.selectedDirectoryImage}",
+          "at": [
+            8,
+            320
+          ],
+          "size": [
+            690,
+            568
+          ]
+        },
+        {
+          "type": "rectangle",
+          "box": [
+            710,
+            765,
+            1130,
+            832
+          ],
+          "fill": "#ffffff"
+        },
+        {
+          "type": "text",
+          "value": {
+            "zh": "按住选中项，拖到右侧区域",
+            "en": "Drag selected items to this area"
+          },
+          "at": [
+            722,
+            779
+          ],
+          "size": 23,
+          "maxWidth": 395,
+          "fill": "#176e67"
+        }
+      ]
+    },
+    "drop": {
+      "extends": "upload-ready",
+      "layers": [
+        {
+          "type": "rectangle",
+          "box": [
+            708,
+            387,
+            1123,
+            712
+          ],
+          "outline": "#217d70",
+          "width": 3
+        }
+      ]
+    },
+    "dragging": {
+      "extends": "drop",
+      "layers": []
+    },
+    "select-hint": {
+      "extends": "directory",
+      "layers": [
+        {
+          "type": "rectangle",
+          "box": [
+            720,
+            800,
+            1200,
+            935
+          ],
+          "fill": "#253b40"
+        },
+        {
+          "type": "text",
+          "value": {
+            "zh": "按住鼠标左键，框选全部内容",
+            "en": "Hold left mouse button and select all"
+          },
+          "at": [
+            740,
+            818
+          ],
+          "size": 25,
+          "maxWidth": 440
+        },
+        {
+          "type": "text",
+          "value": {
+            "zh": "也可以按 Ctrl+A 全选",
+            "en": "Or press Ctrl+A to select all"
+          },
+          "at": [
+            740,
+            877
+          ],
+          "size": 24,
+          "maxWidth": 440
+        }
+      ]
+    },
+    "marquee": {
+      "extends": "select-hint",
+      "layers": []
+    },
+    "marquee-end": {
+      "extends": "select-hint",
+      "layers": []
+    }
+  },
+  "previewScenes": [
+    "browse",
+    "directory",
+    "select-hint",
+    "marquee-end",
+    "selected",
+    "upload-ready",
+    "dragging",
+    "drop"
+  ],
+  "timeline": [
+    {
+      "action": "hold",
+      "scene": "library",
+      "at": [
+        180,
+        515
+      ],
+      "durationMs": 1200
+    },
+    {
+      "action": "move",
+      "to": [
+        285,
+        400
+      ],
+      "durationMs": 900
+    },
+    {
+      "action": "hold",
+      "durationMs": 650
+    },
+    {
+      "action": "click",
+      "button": "right",
+      "durationMs": 450
+    },
+    {
+      "action": "hold",
+      "scene": "context",
+      "durationMs": 1000
+    },
+    {
+      "action": "move",
+      "to": [
+        371,
+        617
+      ],
+      "durationMs": 1080
+    },
+    {
+      "action": "hold",
+      "scene": "submenu",
+      "durationMs": 1100
+    },
+    {
+      "action": "move",
+      "to": "{layout.submenuCross}",
+      "durationMs": 900
+    },
+    {
+      "action": "move",
+      "to": "{layout.browseCursor}",
+      "durationMs": 630
+    },
+    {
+      "action": "hold",
+      "scene": "browse",
+      "durationMs": 1050
+    },
+    {
+      "action": "click",
+      "button": "left",
+      "durationMs": 450
+    },
+    {
+      "action": "hold",
+      "scene": "directory",
+      "at": [
+        1020,
+        535
+      ],
+      "durationMs": 1800
+    },
+    {
+      "action": "move",
+      "to": "{layout.selectionStart}",
+      "durationMs": 720
+    },
+    {
+      "action": "hold",
+      "scene": "select-hint",
+      "durationMs": 1000
+    },
+    {
+      "action": "marquee",
+      "scene": "marquee",
+      "to": "{layout.selectionEnd}",
+      "rows": "{layout.selectionRows}",
+      "selectedScene": "selected",
+      "durationMs": 2400
+    },
+    {
+      "action": "marquee",
+      "scene": "marquee-end",
+      "anchor": "{layout.selectionStart}",
+      "to": "{layout.selectionEnd}",
+      "rows": "{layout.selectionRows}",
+      "selectedScene": "selected",
+      "durationMs": 700
+    },
+    {
+      "action": "hold",
+      "scene": "selected",
+      "durationMs": 1600
+    },
+    {
+      "action": "hold",
+      "scene": "upload-ready",
+      "at": [
+        180,
+        510
+      ],
+      "durationMs": 1600
+    },
+    {
+      "action": "drag",
+      "to": [
+        920,
+        550
+      ],
+      "durationMs": 2400,
+      "label": {
+        "zh": "+ 复制",
+        "en": "+ Copy"
+      }
+    },
+    {
+      "action": "drag",
+      "scene": "dragging",
+      "to": [
+        920,
+        550
+      ],
+      "durationMs": 900,
+      "label": {
+        "zh": "+ 复制",
+        "en": "+ Copy"
+      }
+    },
+    {
+      "action": "hold",
+      "scene": "drop",
+      "durationMs": 2000
+    }
+  ],
+  "requiresSelectedDirectory": true
+}

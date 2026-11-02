@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "description": {
+    "zh": "Steam 库：右键游戏 → 管理 → 浏览本地文件。截图合成，不操作真实客户端。",
+    "en": "Steam Library: right-click the game, Manage, Browse local files. Screenshot animation; does not operate Steam."
+  },
+  "canvas": [1238, 1020],
+  "frameMs": 90,
+  "outputName": "steam-open-{game.id}-{lang}",
+  "layout": {
+    "submenuX": { "zh": 491, "en": 524 },
+    "submenuCross": { "zh": [556, 617], "en": [589, 617] },
+    "browseCursor": { "zh": [595, 682], "en": [628, 682] }
+  },
+  "scenes": {
+    "library": {
+      "layers": [
+        { "type": "image", "path": "assets/steam/{lang}/library.png", "at": [0, 0] },
+        { "type": "rectangle", "box": [0, 378, 619, 421], "fill": "#23282f" },
+        { "type": "image", "path": "{game.icon}", "at": [29, 383], "size": [36, 36] },
+        { "type": "text", "value": "{game.name}", "at": [73, 384], "size": 22, "maxWidth": 538, "fill": "#edf0f5" }
+      ]
+    },
+    "context": {
+      "extends": "library",
+      "layers": [
+        { "type": "rectangle", "box": [1, 378, 619, 421], "outline": "#6a8fb3", "width": 2 },
+        { "type": "image", "path": "assets/steam/{lang}/context-menu.png", "at": [285, 407] }
+      ]
+    },
+    "submenu": {
+      "extends": "library",
+      "layers": [
+        { "type": "rectangle", "box": [1, 378, 619, 421], "outline": "#6a8fb3", "width": 2 },
+        { "type": "image", "path": "assets/steam/{lang}/context-manage.png", "at": [285, 407] },
+        { "type": "image", "path": "assets/steam/{lang}/manage-menu.png", "at": ["{layout.submenuX}", 589] }
+      ]
+    },
+    "browse": {
+      "extends": "submenu",
+      "layers": [
+        { "type": "image", "path": "assets/steam/{lang}/manage-browse.png", "at": ["{layout.submenuX}", 589] }
+      ]
+    },
+    "directory": {
+      "layers": [
+        { "type": "image", "path": "{game.directoryImage}", "at": [0, 0], "size": [1238, 1020] }
+      ]
+    }
+  },
+  "previewScenes": ["library", "context", "browse", "directory"],
+  "timeline": [
+    { "action": "hold", "scene": "library", "at": [180, 515], "durationMs": 1200 },
+    { "action": "move", "to": [285, 400], "durationMs": 900 },
+    { "action": "hold", "durationMs": 650 },
+    { "action": "click", "button": "right", "durationMs": 450 },
+    { "action": "hold", "scene": "context", "durationMs": 1000 },
+    { "action": "move", "to": [371, 617], "durationMs": 1080 },
+    { "action": "hold", "scene": "submenu", "durationMs": 1100 },
+    { "action": "move", "to": "{layout.submenuCross}", "durationMs": 900 },
+    { "action": "move", "to": "{layout.browseCursor}", "durationMs": 630 },
+    { "action": "hold", "scene": "browse", "durationMs": 1050 },
+    { "action": "click", "button": "left", "durationMs": 450 },
+    { "action": "hold", "scene": "directory", "at": [1020, 535], "durationMs": 3500 }
+  ]
+}

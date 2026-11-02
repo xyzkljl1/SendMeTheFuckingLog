@@ -13,3 +13,4 @@ __pycache__/
 .docker-ci/
 .ssh-*/
 .smoke/
+GifGuideGenerator/output/
