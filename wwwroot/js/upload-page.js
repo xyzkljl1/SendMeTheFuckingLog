@@ -10,7 +10,7 @@
         zh: {
             title: "上传日志",
             guideImageOpen: "点击放大", guideImageUnavailable: "演示图片暂时无法加载，请按文字指引操作。",
-            automaticGuideAlt: "Steam 操作示例：右键你的游戏，选择管理 → 浏览本地文件。",
+            automaticGuideAlt: "操作示例：从 Steam 打开游戏目录，鼠标框选全部内容（也可按 Ctrl+A），再拖入上传区域。",
             recipientBefore: "文件将交给作者", recipientAfter: "，用于排查 Mod 问题。",
             chooseRoute: "选择方式", autoTitle: "自动选择日志", autoDescription: "选择游戏文件夹，自动查找日志",
             manualTitle: "手动选择日志", manualDescription: "跟随指示找到日志并上传",
@@ -56,7 +56,7 @@
         en: {
             title: "Upload logs",
             guideImageOpen: "View full size", guideImageUnavailable: "The guide image could not load. Please follow the written steps.",
-            automaticGuideAlt: "Steam example: right-click your game and choose Manage → Browse local files.",
+            automaticGuideAlt: "Example: open your game's folder from Steam, drag a selection box around all items (or press Ctrl+A), then drag them into the upload area.",
             recipientBefore: "Files will be sent to the author", recipientAfter: " to troubleshoot your mod issue.",
             chooseRoute: "Choose a method", autoTitle: "Select logs automatically", autoDescription: "Choose your game folder to find logs automatically",
             manualTitle: "Select logs manually", manualDescription: "Follow the instructions to find and upload logs",
