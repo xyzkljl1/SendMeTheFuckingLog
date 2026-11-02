@@ -9,6 +9,7 @@ import re
 import sys
 
 from PIL import Image, ImageDraw, ImageFont
+import navigation
 
 ROOT = Path(__file__).resolve().parent
 TOKEN = re.compile(r"\{([a-zA-Z][a-zA-Z0-9_.]*)\}")
@@ -114,6 +115,8 @@ class Renderer:
         if not 64 <= width <= 1920 or not 64 <= height <= 1440 or width * height > 2200000:
             raise ValueError("Canvas must fit within 1920 x 1440 and 2.2 million pixels")
         self.font_path = font
+        self.language = language
+        self.navigation = game.get("navigation")
         self.fonts = {}
         self.scenes = {}
         self.assets = {}
@@ -140,7 +143,21 @@ class Renderer:
         draw = ImageDraw.Draw(image)
         for layer in definition.get("layers", []):
             kind = layer["type"]
-            if kind == "image":
+            if kind == "explorer":
+                if not self.navigation:
+                    raise ValueError("Explorer layers require navigation input")
+                image = navigation.render_directory(self.navigation["levels"][layer["level"]],
+                    self.language, self.font, self.size, layer.get("selected"), layer.get("start", 0))
+                draw = ImageDraw.Draw(image)
+            elif kind == "scene":
+                asset = self.scene(layer["name"], (*ancestors, name))
+                size = pair(layer["size"], "scene size")
+                if any(n < 1 for n in size) or size[0] * size[1] > 2200000:
+                    raise ValueError("Invalid scene layer dimensions")
+                x, y = pair(layer["at"], "scene position")
+                self.check_box((x, y, x + size[0] - 1, y + size[1] - 1))
+                image.paste(asset.resize(size, Image.Resampling.LANCZOS), (x, y))
+            elif kind == "image":
                 # Path objects come only from explicit CLI inputs; template paths stay confined.
                 path = layer["path"] if isinstance(layer["path"], Path) else inside(layer["path"])
                 if path not in self.assets:
@@ -203,7 +220,7 @@ class Renderer:
         position = None
         elapsed = 0
 
-        def append(point, duration, pulse=None, drag_label=None, marquee=None):
+        def append(point, duration, pulse=None, drag_label=None, marquee=None, drag_icon="items"):
             nonlocal elapsed
             if len(frames) >= MAX_FRAMES or (len(frames) + 1) * self.size[0] * self.size[1] * 3 > MAX_FRAME_BYTES:
                 raise ValueError("Animation exceeds the frame/memory limit; reduce resolution or movement frames")
@@ -211,7 +228,7 @@ class Renderer:
             if marquee is not None:
                 self.draw_marquee(image, marquee[0], point, marquee[1], marquee[2])
             if drag_label is not None:
-                self.draw_drag(image, point, drag_label)
+                self.draw_drag(image, point, drag_label, drag_icon)
             draw_cursor(image, point, pulse)
             frames.append(image)
             durations.append(duration)
@@ -257,7 +274,7 @@ class Renderer:
                     eased = t * t * (3 - 2 * t)
                     point = tuple(round(a + (b - a) * eased) for a, b in zip(position, target))
                     append(point, ms, index / max(1, count - 1) if action == "click" else None,
-                           step.get("label", "") if action == "drag" else None, marquee)
+                           step.get("label", "") if action == "drag" else None, marquee, step.get("icon", "items"))
                 position = target
             else:
                 raise ValueError(f"Unknown timeline action: {action}")
@@ -275,7 +292,9 @@ class Renderer:
                        outline=(0, 120, 215, 255), width=2)
         image.paste(overlay, (0, 0), overlay)
 
-    def draw_drag(self, image, position, label):
+    def draw_drag(self, image, position, label, icon="items"):
+        if icon not in ("items", "file"):
+            raise ValueError("Drag icon must be items or file")
         draw = ImageDraw.Draw(image)
         font = self.font(20)
         width = max(120, math.ceil(draw.textlength(label, font=font)) + 32)
@@ -286,8 +305,13 @@ class Renderer:
         y = max(8, min(position[1] + 32, image.height - height - 8))
         draw.rounded_rectangle((x + 5, y + 5, x + width + 5, y + height + 5), radius=5, fill="#d1d9dc")
         draw.rounded_rectangle((x, y, x + width, y + height), radius=5, fill="#ffffff", outline="#74898d", width=2)
-        draw.rectangle((x + 16, y + 14, x + 43, y + 35), fill="#ffd778", outline="#c59c36")
-        draw.rectangle((x + 21, y + 20, x + 48, y + 41), fill="#ffe4a0", outline="#c59c36")
+        if icon == "file":
+            draw.rectangle((x + 18, y + 12, x + 42, y + 42), fill="#fafafa", outline="#8c959d")
+            for dy in (22, 28, 34):
+                draw.line((x + 23, y + dy, x + 37, y + dy), fill="#8c959d")
+        else:
+            draw.rectangle((x + 16, y + 14, x + 43, y + 35), fill="#ffd778", outline="#c59c36")
+            draw.rectangle((x + 21, y + 20, x + 48, y + 41), fill="#ffe4a0", outline="#c59c36")
         draw.text((x + 16, y + 50), label, font=font, fill="#176e67")
 
 
@@ -352,6 +376,8 @@ def generate(game, languages, output, font):
         if not isinstance(game.get(field), str) or not IDENTIFIER.fullmatch(game[field]):
             raise ValueError(f"Invalid {field}: {game.get(field)}")
     template = read_config(inside(f"templates/{game['template']}.json"))
+    if template.get("requiresNavigation"):
+        template = navigation.build_template(template, game.get("navigation"))
     for language in languages:
         renderer = Renderer(template, game, language, font)
         name = renderer.template["outputName"]
@@ -394,8 +420,10 @@ Use a CJK font with --font if automatic font discovery is unavailable.
     parser.add_argument("game", help="game ID used in output filenames, e.g. my-game")
     parser.add_argument("--name", required=True, help="Chinese/default display name")
     parser.add_argument("--name-en", help="English display name (defaults to --name)")
-    parser.add_argument("--icon", required=True, help="game icon image, read-only")
-    parser.add_argument("--directory", required=True, help="directory screenshot path; supports {lang}")
+    parser.add_argument("--icon", help="game icon image, required by Steam templates")
+    parser.add_argument("--directory", help="directory screenshot path; required by Steam templates; supports {lang}")
+    parser.add_argument("--navigation", help="complete directory listing JSON file, or - to read JSON from stdin")
+    parser.add_argument("--upload-page", help="manual upload page screenshot; supports {lang}; navigation template only")
     parser.add_argument("--directory-selected", help="screenshot of all items selected; supports {lang}; required by the drag template")
     parser.add_argument("--template", default="steam-open-directory", help="reusable operation template ID")
     parser.add_argument("--illustration", action="store_true", help="mark GIF metadata as an illustration")
@@ -413,10 +441,33 @@ Use a CJK font with --font if automatic font discovery is unavailable.
     if args.output:
         output = inside(args.output, output)
     languages = ["zh", "en"] if args.language == "both" else [args.language]
+    template = read_config(inside(f"templates/{args.template}.json"))
+    if template.get("requiresNavigation"):
+        if not args.navigation:
+            parser.error("This template requires --navigation FILE or --navigation -")
+        if args.icon or args.directory or args.directory_selected:
+            parser.error("Navigation templates render their own directories; omit screenshot/icon inputs")
+        raw = (sys.stdin.buffer.read().decode("utf-8-sig") if args.navigation == "-"
+               else Path(args.navigation).read_text(encoding="utf-8-sig"))
+        data = navigation.validate(json.loads(raw))
+        upload = {lang: (Path(args.upload_page.replace("{lang}", lang)).expanduser().resolve()
+                        if args.upload_page else inside(f"assets/upload/manual-{lang}.png"))
+                  for lang in ("zh", "en")}
+        for lang in languages:
+            if not upload[lang].is_file():
+                raise ValueError(f"Upload page screenshot not found: {upload[lang]}")
+        game = {"id": args.game, "template": args.template,
+                "name": {"zh": args.name, "en": args.name_en or args.name},
+                "navigation": data, "uploadPage": upload, "isIllustration": True}
+        generate(game, languages, output, find_font(args.font))
+        return
+    if args.navigation or args.upload_page:
+        parser.error("--navigation and --upload-page require a navigation template")
+    if not args.icon or not args.directory:
+        parser.error("This template requires --icon and --directory")
     icon = Path(args.icon).expanduser().resolve()
     directories = {lang: Path(args.directory.replace("{lang}", lang)).expanduser().resolve()
                    for lang in ("zh", "en")}
-    template = read_config(inside(f"templates/{args.template}.json"))
     if template.get("requiresSelectedDirectory") and not args.directory_selected:
         parser.error("This template requires --directory-selected")
     selected = ({lang: Path(args.directory_selected.replace("{lang}", lang)).expanduser().resolve()

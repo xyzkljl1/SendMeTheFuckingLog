@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "description": {
+    "zh": "根据完整目录清单逐级打开文件夹，选择指定文件后拖入手动上传区域。",
+    "en": "Open each folder using complete directory listings, select the target file, and drag it into the manual upload area."
+  },
+  "requiresNavigation": true,
+  "canvas": [1238, 1020],
+  "frameMs": 180,
+  "outputName": "navigate-{game.id}-{lang}",
+  "scenes": {
+    "upload-ready": {
+      "layers": [
+        {"type":"image", "path":"{game.uploadPage}", "crop":[0,200,1265,1242], "at":[0,0], "size":[1238,1020]},
+        {"type":"rectangle", "box":[7,304,700,874], "fill":"#697a7d"}
+      ]
+    },
+    "dragging": {
+      "extends":"upload-ready",
+      "layers":[{"type":"rectangle", "box":[716,625,1135,785], "outline":"#217d70", "width":3}]
+    },
+    "drop": {"extends":"dragging", "layers":[]}
+  }
+}

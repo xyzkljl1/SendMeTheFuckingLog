@@ -10,12 +10,13 @@
       "images": ["guides/steam-open-phantom-blade-zero-demo-{lang}.gif"]
     },
     {
-      "zh": "在游戏安装文件夹内，依次打开 platform → steam → ue4ss。",
-      "en": "Inside the game's installation folder, open platform → steam → ue4ss."
+      "zh": "在打开的游戏文件夹中，依次双击 platform → steam → ue4ss，再单击选中 UE4SS.log（必需），将它拖入日志上传区域。",
+      "en": "In the game folder, double-click platform → steam → ue4ss in order. Then click UE4SS.log (required) to select it and drag it into the log upload area.",
+      "images": ["guides/navigate-phantom-blade-zero-ue4ss-log-{lang}.gif"]
     },
     {
-      "zh": "选择 UE4SS.log 和 UE4SS-settings.ini。它们在同一个文件夹中；缺少其中一个时，也可以先添加找到的文件。",
-      "en": "Select UE4SS.log and UE4SS-settings.ini from that folder. If one is missing, you can still add the file you found."
+      "zh": "只有作者要求时，才需添加同目录的 UE4SS-settings.ini。选好文件后，填写昵称并点击发送。",
+      "en": "Add UE4SS-settings.ini from the same folder only if the author requests it. Once your files are selected, enter your nickname and click Send."
     }
   ],
   "files": [

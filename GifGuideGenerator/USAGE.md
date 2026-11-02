@@ -1,6 +1,6 @@
 # GIF Generator：AI agent 使用说明
 
-本工具用 Python/Pillow 将截图素材、游戏名称和鼠标动画合成为操作演示 GIF。它不操作真实 Steam、不录屏，也不会自动理解任意截图中的按钮位置。支持仅打开目录的短模板，以及继续全选并拖入网页的长模板。
+本工具用 Python/Pillow 将截图素材、目录清单、游戏名称和鼠标动画合成为操作演示 GIF。它不操作真实 Steam、不录屏，也不会自动理解任意截图中的按钮位置。支持从 Steam 打开目录、框选拖入网页，以及从游戏根目录逐级查找文件并拖入网页三种模板。
 
 每次通过命令行提供游戏参数，不要为单次任务创建永久游戏 JSON、游戏专用脚本或命令记录文件。通用模板 JSON 可以长期复用。本文只说明工具用法，不替代项目和用户的授权要求。
 
@@ -51,6 +51,7 @@ python -B GifGuideGenerator/generate.py phantom-blade-zero-demo `
 | --- | --- | --- | --- |
 | `steam-open-directory`（默认） | Steam 右键游戏 → 管理 → 浏览本地文件 | 无 | `steam-open-` |
 | `steam-drag-to-upload` | 上述完整流程 → 从空白处按住鼠标左键框选 → 松开后所有文件和文件夹保持高亮 → 拖入上传页面 → 松开鼠标；文字提示也可按 Ctrl+A 全选 | 必须提供 `--directory-selected`；内置实际渲染的中英文上传页面截图 | `steam-drag-` |
+| `navigate-to-file` | 从给定游戏根目录开始 → 依次双击文件夹 → 单击选中最后的指定文件 → 拖入手动上传区域 → 松开鼠标 | `--navigation` 完整目录清单；内置中英文手动模式页面截图，可通过 `--upload-page` 替换 | `navigate-` |
 
 长模板使用示例：
 
@@ -75,14 +76,16 @@ python -B GifGuideGenerator/generate.py phantom-blade-zero-demo `
 | 首个位置参数 | 游戏 ID，用于输出文件名，例如 `my-game`。仅允许小写 ASCII 字母、数字和分隔用的单连字符。 |
 | `--name` | 必填，中文或默认显示名称。 |
 | `--name-en` | 英文名称，省略时使用 `--name`，不会自动翻译。 |
-| `--icon` | 必填，图标文件路径。 |
-| `--directory` | 必填，目录截图路径；`{lang}` 会替换为 `zh` 或 `en`。没有占位符时两种语言使用同一张图片。 |
+| `--icon` | Steam 模板必填，图标文件路径。逐级目录模板不使用。 |
+| `--directory` | Steam 模板必填，目录截图路径；`{lang}` 会替换为 `zh` 或 `en`。没有占位符时两种语言使用同一张图片。逐级目录模板不使用。 |
 | `--directory-selected` | 全部文件和文件夹已选中的目录截图，支持 `{lang}`，长模板必填。应与未选中截图保持同样的窗口位置、尺寸、滚动位置和目录内容，且没有残留的框选矩形。 |
 | `--language` | `both`、`zh` 或 `en`，默认 `both`。只生成一种语言时只要求该语言的目录图片存在。 |
 | `--template` | 操作模板 ID，默认 `steam-open-directory`，读取 `templates/<ID>.json`。ID 格式与游戏 ID 相同。 |
 | `--illustration` | 在 GIF 元数据中记录素材为示意，不会自动在画面上加「示意」文字。需要可见标识时应在素材里体现。 |
 | `--output` | `output/` 下的子目录，例如 `review` 或 `review/game`。不能指定绝对路径或 `..`。 |
 | `--font` | 已有 TTF/OTF/TTC 字体文件路径，应支持所需中英文字符。 |
+| `--navigation` | 逐级目录模板必填：已有 UTF-8 JSON 清单文件的只读路径，或 `-` 表示从标准输入读取。清单不会另存为游戏配置。 |
+| `--upload-page` | 逐级目录模板可选：已选好游戏的手动上传页面截图路径，支持 `{lang}`。省略时使用 `assets/upload/manual-{lang}.png`。 |
 
 命令行输入素材和字体路径支持绝对路径，或相对于执行命令时的当前目录。模板内普通素材路径则相对于 `GifGuideGenerator/`，必须使用正斜杠且不能越出该目录。这两类路径不要混淆。
 
@@ -107,6 +110,62 @@ steam-open-<游戏ID>-en-preview.png
 - 选择英文版本只会选取英文模板素材和名称，不会翻译截图中的文字。应提供英文目录截图；菜单用语要依据真实英文客户端核实，不能凭中文直译后声称与客户端一致。
 - 示例影之刃零目录画面属于修改素材制作的示意，不能当作真实目录结构证据。其它游戏也须依据用户提供的素材或已核实的信息制作。
 - `click` 的左右键参数描述操作语义，目前两者使用相同的点击圆环效果。菜单显示由后续场景切换控制，不是点击坐标自动触发。
+
+### 逐级打开目录并选择文件
+
+`navigate-to-file` 不包含开头的 Steam 操作，直接从输入的首级目录开始。每一级必须传入**完整显示清单**，包括不点击的其它文件/文件夹，按实际资源管理器的显示顺序填写。不要只列出目标路径上的项目，也不要凭空补全截图未展示的内容。如果截图没有覆盖完整清单，先取得缺失信息。
+
+输入结构如下。此处是最小结构示例，不是影之刃零的真实文件清单：
+
+```json
+{
+  "schemaVersion": 1,
+  "levels": [
+    {
+      "path": "ExampleGame",
+      "complete": true,
+      "target": "logs",
+      "entries": [
+        {"name":"logs", "kind":"folder", "modified":"", "size":"", "type":{"zh":"文件夹","en":"File folder"}},
+        {"name":"settings.ini", "kind":"file", "modified":"", "size":"", "type":{"zh":"配置设置","en":"Configuration settings"}}
+      ]
+    },
+    {
+      "path": "ExampleGame/logs",
+      "complete": true,
+      "target": "output.log",
+      "entries": [
+        {"name":"output.log", "kind":"file", "modified":"", "size":"", "type":{"zh":"文本文档","en":"Text Document"}},
+        {"name":"previous.log", "kind":"file", "modified":"", "size":"", "type":{"zh":"文本文档","en":"Text Document"}}
+      ]
+    }
+  ]
+}
+```
+
+- `path` 使用相对于示例安装位置的路径，首级包含游戏目录名；后一级必须等于前一级 `path + "/" + target`。路径是画面数据，程序不会读取该真实目录。
+- `complete: true` 是调用者对清单完整性的确认，程序无法证明它与真实磁盘一致。
+- `entries` 保留输入顺序，不自行按名字或类型重排。名称保持原始大小写和扩展名；`kind` 只能是 `folder` 或 `file`。
+- `modified`、`size` 和双语 `type` 都必须提供。日期/大小直接按输入文本显示，不换算、不编造；确实未知时传空字符串。文件名和类型不会自动翻译，类型的中英文必须由调用者核实。
+- 除最后一级外，`target` 必须是本级清单中存在的文件夹；最后一级必须是文件。模板会双击目录、单击最后文件，每次只高亮一个目标，拖动提示也使用单文件图标。
+- 清单缺失、路径跳级、目标不存在、目标类型错误、大小写重复项目会报错。过长的文件名或列内容放不下时也会报错，不会静默截断；路径导航栏可从左侧省略过长的前缀。
+- 支持 1～8 级目录，每级 1～200 个项目；一次显示 14 行，目标位于下方时依次切换滚动位置并更新滚动条。完整清单仍保留，动画不会删除未选项目。较长路径仍受总动作数、帧数和内存限制，不保证所有最大值组合均能生成。
+- 文件夹和文件采用统一示意图标，资源管理器布局按截图样式渲染，不是实际录屏；应用程序的专属图标、系统主题和字体可能与用户电脑不同。输出自动标记为示意。
+
+推荐由 agent 将 JSON 留在内存，通过标准输入传入，不为单次生成新建永久游戏 JSON。PowerShell 示例（`$listingJson` 为按上述结构准备好的 JSON 字符串）：
+
+```powershell
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$listingJson | python -B GifGuideGenerator/generate.py example-log `
+  --name '示例游戏' --name-en 'Example Game' `
+  --template navigate-to-file --navigation -
+```
+
+也可只读使用用户已有的清单：`--navigation 'C:/path/to/existing-listing.json'`。不要同时传 `--icon`、`--directory` 或 `--directory-selected`；目录画面在内存中渲染，不生成中间截图文件。
+
+影之刃零示例依据本次提供的截图：`PBZ`（6 项）→ `PBZ/platform`（1 项）→ `PBZ/platform/steam`（7 项）→ `PBZ/platform/steam/ue4ss`（11 项），最终选择 `UE4SS.log`；`UE4SS-settings.ini` 等其它文件仍显示但不选中。示例输出名为 `navigate-phantom-blade-zero-ue4ss-log-{lang}.gif`，不会自动替换网站指引。
+
+手动模式底图 `assets/upload/manual-{lang}.png` 来自本机实际渲染、已选中影之刃零的中英文页面。模板裁剪源图 `[0,200,1265,1242]` 并缩放至 1238 × 1020，资源管理器缩放至 690 × 568 后置于 `[8,305]`，拖放终点为 `[925,690]`。用于其它游戏时应通过 `--upload-page` 提供对应游戏的真实手动模式截图；若页面布局不同，还需调整模板的裁剪、窗口位置、高亮区域以及 `navigation.py` 中的终点坐标。不能只换目录清单却继续把影之刃零的网页当作其它游戏的页面。
 
 ### 长模板中的网页画面
 
@@ -133,6 +192,7 @@ steam-open-<游戏ID>-en-preview.png
 | `previewScenes` | 1～8 个在时间线中实际出现的场景名，按此顺序生成预览。 |
 | `timeline` | 顺序执行的 `hold`、`move`、`click`、`drag`、`marquee` 操作。 |
 | `requiresSelectedDirectory` | 设为 `true` 时要求 CLI 提供 `--directory-selected`，当前长模板使用此字段。 |
+| `requiresNavigation` | 设为 `true` 时使用 `navigation.py` 根据传入清单在内存中生成目录场景和时间线，当前逐级目录模板使用此字段。 |
 
 图层类型：`image` 使用 `path`、`at` 和可选 `size`、`crop`；`crop` 是源图像上的 `[左,上,右,下]`，右/下边界不包含在内，先裁剪再缩放。`rectangle` 使用 `box`、可选 `fill`/`outline`/`width`；`text` 使用 `value`、`at`、可选 `size`/`maxWidth`/`fill`。图层必须落在画布内。
 
@@ -145,6 +205,8 @@ steam-open-<游戏ID>-en-preview.png
 可用变量为 `{lang}`、`{game.id}`、`{game.name}`、`{game.icon}`、`{game.directoryImage}` 和 `{layout.字段名}` 等。恰好包含 `zh`、`en` 两个键的对象会按语言取值。完整占位符可保留坐标数组等类型；图层的 `path` 引用 CLI 素材时应直接写 `"{game.icon}"` 或 `"{game.directoryImage}"`，不要再拼接路径前缀。
 
 长模板另使用 `"{game.selectedDirectoryImage}"` 引用全选后的截图。短模板仍不需要这个参数。
+
+逐级目录模板使用 `"{game.uploadPage}"` 引用页面素材；`explorer` 图层按 `level`、`start`、`selected` 索引渲染清单，`scene` 图层可将已有命名场景缩放后叠加到画面，不需要中间 PNG。清单本身不会经过占位符解释，带花括号的合法文件名仍按原文显示。`drag` 可设置 `icon: "file"` 表示单个文件；省略时使用原有多项目图标。
 
 时长与帧间隔均须为正的 10 ms 倍数，每项时长最多 10 秒，`frameMs` 最多 1000 ms。时间线最多 100 项，生成的原始帧最多 180 张，原始 RGB 帧数据最多 400 MiB；这不是进程总内存上限，编码还会使用额外内存。画布宽 64～1920、高 64～1440，且总像素不超过 220 万。触发限制时应减少移动帧数或画面尺寸，不要为单次任务随意取消限制。
 
