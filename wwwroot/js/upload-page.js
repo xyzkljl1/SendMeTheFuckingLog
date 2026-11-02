@@ -13,7 +13,7 @@
             automaticGuideAlt: "操作示例：从 Steam 打开游戏目录，鼠标框选全部内容（也可按 Ctrl+A），再拖入上传区域。",
             recipientBefore: "文件将交给作者", recipientAfter: "，用于排查 Mod 问题。",
             chooseRoute: "选择方式", autoTitle: "自动选择日志", autoDescription: "选择游戏文件夹，自动查找日志",
-            manualTitle: "手动选择日志", manualDescription: "按下面的演示，找到文件后发送",
+            manualTitle: "手动选择日志", manualDescription: "按下面的说明，找到文件后发送",
             folderHeading: "打开游戏本地文件", folderDescription: "在 Steam 中右键游戏 → 管理 → 浏览本地文件。",
             dragInstruction: "在打开的窗口中选择全部文件，拖入右侧窗口。",
             dropFolder: "把游戏文件夹里的内容拖到这里", oneFolder: "（也可以回到上一级目录并选择游戏文件夹）", chooseFolder: "选择游戏文件夹",
@@ -63,7 +63,7 @@
             automaticGuideAlt: "Example: open your game's folder from Steam, drag a selection box around all items (or press Ctrl+A), then drag them into the upload area.",
             recipientBefore: "Files will be sent to the author", recipientAfter: " to troubleshoot your mod issue.",
             chooseRoute: "Choose a method", autoTitle: "Select logs automatically", autoDescription: "Choose your game folder to find logs automatically",
-            manualTitle: "Select logs manually", manualDescription: "Follow the demo below to find and send the files",
+            manualTitle: "Select logs manually", manualDescription: "Follow the instructions below to find and send your files",
             folderHeading: "Open your game's local files", folderDescription: "In Steam, right-click the game → Manage → Browse local files.",
             dragInstruction: "Select all files in the window that opens, then drag them into the area on the right.",
             dropFolder: "Drop the contents of your game folder here", oneFolder: "(You can also go up one level and select the game folder.)", chooseFolder: "Choose game folder",
@@ -109,6 +109,16 @@
         }
     };
     const languageStorageKey = "mod-log-helper.language";
+    function readPreference(name) {
+        try { return localStorage.getItem("mod-log-helper." + name) || ""; }
+        catch { return ""; }
+    }
+    function savePreference(name, value) {
+        try {
+            if (value) localStorage.setItem("mod-log-helper." + name, value);
+            else localStorage.removeItem("mod-log-helper." + name);
+        } catch { /* The page remains usable when browser storage is unavailable. */ }
+    }
     function initialLanguage() {
         try {
             const saved = localStorage.getItem(languageStorageKey);
@@ -123,9 +133,14 @@
         }
         return "en";
     }
+    const savedGame = readPreference("game");
+    const savedNickname = readPreference("nickname");
+    $("nickname").value = savedNickname.length <= 60 && !/[\u0000-\u001f\u007f-\u009f]/.test(savedNickname) ? savedNickname : "";
     const state = {
         language: initialLanguage(),
-        route: "auto", manualGame: "", autoFiles: [], manualFiles: [], autoStatus: null, manualStatus: null,
+        route: readPreference("route") === "manual" ? "manual" : "auto",
+        manualGame: games.some(game => game.id === savedGame) ? savedGame : "",
+        autoFiles: [], manualFiles: [], autoStatus: null, manualStatus: null,
         scanning: false, scanToken: 0, autoHelp: false,
         recognizedGame: null,
         sending: false, submitted: false, uploadStatus: null, receipt: null, receiptNickname: "", progress: null
@@ -417,6 +432,7 @@
         $("supported-games").textContent = supported.length ? supported.map(gameName).join(" · ") : text("noGames");
         renderGameCards("game-cards", games.map(game => ({ game, value: game.id })), "manual-game", state.manualGame, value => {
             clearAttention(); resetUpload(); state.manualGame = value; state.manualFiles = []; state.manualStatus = null;
+            savePreference("game", value);
             renderGuide(); renderSelection(); renderStatus();
         });
         for (const route of ["auto", "manual"]) {
@@ -432,7 +448,7 @@
             clearAttention(); resetUpload();
             if (state.scanning) clearAutomatic();
         }
-        state.route = route; render();
+        state.route = route; savePreference("route", route); render();
     }
     document.querySelectorAll("[data-language]").forEach(button => button.addEventListener("click", () => {
         state.language = button.dataset.language;
@@ -448,6 +464,7 @@
     $("switch-manual").addEventListener("click", () => {
         const supported = games.filter(game => !game.isDemo);
         if (!state.manualGame && supported.length === 1) state.manualGame = supported[0].id;
+        savePreference("game", state.manualGame);
         changeRoute("manual"); $("game-cards").querySelector("input:checked, input")?.focus();
     });
     $("choose-files").addEventListener("click", () => $("file-input").click());
@@ -505,6 +522,7 @@
             if (state.manualGame !== candidate.game.id) {
                 state.manualGame = candidate.game.id; state.manualFiles = []; state.manualStatus = null;
             }
+            savePreference("game", candidate.game.id);
             state.autoHelp = !records.length;
             setStatus("auto", records.length ? "found" : "notFound", { folder: source.folder, count: records.length }, !records.length);
             renderSelection();
@@ -563,7 +581,12 @@
     // Prevent accidental navigation if files are dropped outside the designated zones.
     document.addEventListener("dragover", event => event.preventDefault());
     document.addEventListener("drop", event => event.preventDefault());
-    $("nickname").addEventListener("input", () => { if (!state.sending) { resetUpload(); renderUpload(); } });
+    $("nickname").addEventListener("input", () => {
+        if (!state.sending) {
+            savePreference("nickname", $("nickname").value);
+            resetUpload(); renderUpload();
+        }
+    });
     $("send-files").addEventListener("click", async () => {
         if (state.sending || state.scanning || state.submitted || (state.route === "auto" && !state.recognizedGame)) return;
         const invalid = validationError();
