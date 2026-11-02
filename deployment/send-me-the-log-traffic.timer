@@ -1,0 +1,12 @@
+# Managed by send-me-the-log deployment.
+[Unit]
+Description=Check Send Me The Log host traffic every minute
+
+[Timer]
+OnBootSec=0
+OnUnitActiveSec=60s
+AccuracySec=1s
+Unit=send-me-the-log-traffic.service
+
+[Install]
+WantedBy=timers.target

@@ -1,18 +1,63 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.Repositories;
 using System.Xml.Linq;
+using SendMeTheFuckingLog.Models;
+using SendMeTheFuckingLog.Storage;
+using SendMeTheFuckingLog.Monitoring;
+using System.Net;
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+    var storageLimits = builder.Configuration.GetSection("Storage").Get<StorageLimits>() ?? new StorageLimits();
+    storageLimits.Validate();
+    var requestLimits = builder.Configuration.GetSection("GlobalRateLimit").Get<RequestLimits>() ?? new RequestLimits();
+    requestLimits.Validate();
+    builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = storageLimits.RequestBytes);
 
     builder.Services.AddRazorPages();
+    builder.Services.Configure<UploadPageOptions>(builder.Configuration.GetSection("UploadPage"));
+    builder.Services.AddSingleton<GameCatalog>();
+    builder.Services.AddSingleton(storageLimits);
+    builder.Services.AddSingleton<SubmissionStore>();
+    builder.Services.AddSingleton(requestLimits);
+    builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddSingleton<RequestCounter>();
+    builder.Services.AddHostedService(services => services.GetRequiredService<RequestCounter>());
+    builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
     // Keep this starter app from persisting keys outside its directory.
     builder.Services.AddDataProtection()
         .AddKeyManagementOptions(options => options.XmlRepository = new InMemoryKeyRepository());
 
     var app = builder.Build();
+    app.Services.GetRequiredService<SubmissionStore>().Initialize();
+    var requestCounter = app.Services.GetRequiredService<RequestCounter>();
+    requestCounter.Initialize();
+    app.Use(async (context, next) =>
+    {
+        // Docker liveness probes are local only and must not consume public quotas.
+        if (context.Request.Path == "/healthz" && HttpMethods.IsGet(context.Request.Method)
+            && context.Connection.RemoteIpAddress is { } address && IPAddress.IsLoopback(address))
+        {
+            context.Response.StatusCode = 200;
+            await context.Response.WriteAsync("OK");
+            return;
+        }
+        var status = requestCounter.Admit();
+        if (status == 200) { await next(context); return; }
+        context.Response.StatusCode = status;
+        context.Response.Headers.CacheControl = "no-store";
+        if (context.Request.Path.StartsWithSegments("/api"))
+            await context.Response.WriteAsJsonAsync(new { error = "siteBusy" });
+        else
+        {
+            context.Response.ContentType = "text/plain; charset=utf-8";
+            await context.Response.WriteAsync("网站暂时繁忙，请稍后重试。 / The website is busy. Please try again later.");
+        }
+    });
+    app.UseStaticFiles();
     app.MapRazorPages();
+    app.MapPost("/api/uploads", UploadEndpoint.HandleAsync);
     app.Run();
 }
 catch (Exception exception)

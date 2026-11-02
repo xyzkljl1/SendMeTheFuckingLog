@@ -128,6 +128,7 @@ class RemoteTests(unittest.TestCase):
             stack.enter_context(patch.object(remote, "ROOT", fake_root))
             stack.enter_context(patch.object(remote, "plain"))
             stack.enter_context(patch.object(remote, "atomic_write"))
+            stack.enter_context(patch.object(remote, "install_traffic_monitor"))
             stack.enter_context(patch.object(remote.os, "geteuid", return_value=0, create=True))
             stack.enter_context(patch.object(remote.os, "uname", return_value=SimpleNamespace(machine="x86_64"), create=True))
             stack.enter_context(patch.object(remote.os, "umask"))
@@ -135,7 +136,8 @@ class RemoteTests(unittest.TestCase):
             stack.enter_context(patch.object(remote.tempfile, "TemporaryDirectory"))
             stack.enter_context(patch.object(remote, "run", side_effect=run))
             stack.enter_context(patch.object(remote, "output", return_value=json.dumps([image])))
-            stack.enter_context(patch.object(remote, "inspect_container", side_effect=[None, container]))
+            stack.enter_context(patch.object(remote, "inspect_container", side_effect=[None, None, container]))
+            reset = stack.enter_context(patch.object(remote, "reset_request_counts"))
             cleanup = stack.enter_context(patch.object(remote, "cleanup_images"))
             if start_fails:
                 with self.assertRaises(subprocess.CalledProcessError):
@@ -144,6 +146,7 @@ class RemoteTests(unittest.TestCase):
             else:
                 remote.main(payload)
                 cleanup.assert_called_once_with("current")
+            reset.assert_called_once_with()
 
 
 if __name__ == "__main__":

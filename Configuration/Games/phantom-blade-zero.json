@@ -1,0 +1,34 @@
+{
+  "id": "phantom-blade-zero",
+  "name": { "zh": "影之刃零", "en": "Phantom Blade Zero" },
+  "image": "https://sendmethefuckinglog.pages.dev/games/phantom-blade-zero.jpg",
+  "executablePaths": ["platform/steam/PBZ.exe", "steam/PBZ.exe"],
+  "instructions": [
+    {
+      "zh": "打开游戏安装文件夹。如果通过 Steam 安装，可在库中右键点击游戏，选择「管理」→「浏览本地文件」。",
+      "en": "Open the game's installation folder. For a Steam installation, right-click the game in your library and choose Manage → Browse local files."
+    },
+    {
+      "zh": "在游戏安装文件夹内，依次打开 platform → steam → ue4ss。",
+      "en": "Inside the game's installation folder, open platform → steam → ue4ss."
+    },
+    {
+      "zh": "选择 UE4SS.log 和 UE4SS-settings.ini。它们在同一个文件夹中；缺少其中一个时，也可以先添加找到的文件。",
+      "en": "Select UE4SS.log and UE4SS-settings.ini from that folder. If one is missing, you can still add the file you found."
+    }
+  ],
+  "files": [
+    {
+      "id": "ue4ss-log",
+      "name": { "zh": "UE4SS 框架日志", "en": "UE4SS framework log" },
+      "kind": "log",
+      "paths": ["platform/steam/ue4ss/UE4SS.log"]
+    },
+    {
+      "id": "ue4ss-settings",
+      "name": { "zh": "UE4SS 框架配置", "en": "UE4SS framework settings" },
+      "kind": "config",
+      "paths": ["platform/steam/ue4ss/UE4SS-settings.ini"]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" width="480" height="270">
+  <defs><linearGradient id="sky" x2="1" y2="1"><stop stop-color="#292849"/><stop offset="1" stop-color="#725c89"/></linearGradient></defs>
+  <path fill="url(#sky)" d="M0 0h480v270H0z"/>
+  <g fill="#c4b2db"><circle cx="61" cy="95" r="2"/><circle cx="180" cy="56" r="3"/><circle cx="421" cy="143" r="2"/><circle cx="267" cy="146" r="2"/></g>
+  <circle cx="347" cy="98" r="53" fill="#cfb0a8"/>
+  <ellipse cx="347" cy="98" rx="83" ry="16" fill="none" stroke="#efd2b3" stroke-width="8" transform="rotate(-25 347 98)"/>
+  <path d="M0 227 73 174 171 235 255 184 380 247 480 212V270H0Z" fill="#24233f"/>
+  <text x="24" y="39" fill="#d5c8eb" font-family="sans-serif" font-size="12" letter-spacing="4">FICTIONAL / DEMO</text>
+  <text x="24" y="232" fill="#f5e9e2" font-family="sans-serif" font-size="28" letter-spacing="3">FAKE GAME</text>
+  <text x="24" y="252" fill="#b6a9cd" font-family="sans-serif" font-size="10" letter-spacing="2">SELECTION PREVIEW</text>
+</svg>

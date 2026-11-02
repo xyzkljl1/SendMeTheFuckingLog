@@ -1,12 +1,126 @@
 @page
+@model SendMeTheFuckingLog.Pages.IndexModel
+@using System.Text.Json
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Hello World</title>
+    <meta name="color-scheme" content="light" />
+    <meta name="request-verification-token" content="@Antiforgery.GetAndStoreTokens(HttpContext).RequestToken" />
+    <title>发送诊断文件 · Mod Log Helper</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+    <script id="page-configuration" type="application/json">@Html.Raw(JsonSerializer.Serialize(Model.PageConfiguration, new JsonSerializerOptions(JsonSerializerDefaults.Web)))</script>
+    <script src="~/js/diagnostic-rules.js" defer></script>
+    <script src="~/js/upload-page.js" defer></script>
 </head>
 <body>
-    <h1>Hello World</h1>
+    <header class="site-header">
+        <a class="brand" href="./" aria-label="Mod Log Helper">
+            <span class="brand-icon" aria-hidden="true">≡</span><span>Mod Log Helper</span>
+        </a>
+        <nav class="language-switch" aria-label="Language / 语言">
+            <button type="button" data-language="zh" lang="zh-CN" aria-pressed="true">中文</button>
+            <button type="button" data-language="en" lang="en" aria-pressed="false">English</button>
+        </nav>
+    </header>
+
+    <main>
+        <section class="intro" aria-labelledby="page-title">
+            <p class="eyebrow"><span aria-hidden="true"></span><span data-i18n="eyebrow">让问题更容易被解决</span></p>
+            <h1 id="page-title" data-i18n="title">发送日志，帮助排查 Mod 问题。</h1>
+            <p class="intro-copy"><span data-i18n="recipientBefore">你提交的日志和相关配置文件将交由作者</span> <strong id="author-name"></strong><span data-i18n="recipientAfter">，用于排查 Mod 问题。</span></p>
+            <p class="intro-note" data-i18n="noAccount">无需注册或登录，按下面的步骤操作即可。</p>
+        </section>
+
+        <noscript><p class="notice">请启用 JavaScript 以使用文件选择和语言切换。Please enable JavaScript to use this page.</p></noscript>
+        <div class="preview-note"><span class="note-icon" aria-hidden="true">i</span><p data-i18n="preview">只有点击发送才会上传选中的文件。存储空间有限，较旧的提交会自动清理。</p></div>
+
+        <section class="route-section" aria-labelledby="route-title">
+            <h2 id="route-title" class="section-heading" data-i18n="chooseRoute">你想如何找到文件？</h2>
+            <div class="route-options" role="group" aria-labelledby="route-title">
+                <button type="button" class="route-card selected" id="route-auto" aria-pressed="true" aria-controls="auto-panel">
+                    <span class="route-symbol" aria-hidden="true">⌕</span>
+                    <span class="route-text"><strong data-i18n="autoTitle">我找不到日志</strong><span data-i18n="autoDescription">选择游戏文件夹，网页帮你查找</span></span>
+                    <span class="choice-dot" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="route-card" id="route-manual" aria-pressed="false" aria-controls="manual-panel">
+                    <span class="route-symbol" aria-hidden="true">↥</span>
+                    <span class="route-text"><strong data-i18n="manualTitle">我自己选择日志</strong><span data-i18n="manualDescription">按照游戏指引，添加日志和配置</span></span>
+                    <span class="choice-dot" aria-hidden="true"></span>
+                </button>
+            </div>
+        </section>
+
+        <div class="workspace">
+            <section id="auto-panel" aria-labelledby="auto-heading">
+                <div class="step-heading"><span class="step-number">1</span><div><h2 id="auto-heading" data-i18n="folderHeading">打开游戏本地文件</h2><p data-i18n="folderDescription">在 Steam 中右键游戏，选择「管理 → 浏览本地文件」。在打开的窗口按 Ctrl+A 全选，把所有内容一起拖到下面。</p></div></div>
+                <div id="folder-drop" class="drop-zone">
+                    <span class="folder-icon" aria-hidden="true"></span>
+                    <h3 data-i18n="dropFolder">把游戏文件夹里的内容拖到这里</h3>
+                    <p data-i18n="oneFolder">也可以拖入整个游戏文件夹。</p>
+                    <button type="button" class="primary-button" id="choose-folder" data-i18n="chooseFolder">选择游戏文件夹</button>
+                    <input id="folder-input" type="file" webkitdirectory hidden />
+                    <span class="drop-note" data-i18n="folderPrivacy">先识别游戏，确认后再查找日志。不会运行或上传游戏程序。</span>
+                </div>
+                <p class="supported-line"><span data-i18n="supported">当前支持：</span><span id="supported-games"></span></p>
+                <p id="folder-status" class="status" role="status" aria-live="polite"></p>
+                <button type="button" id="cancel-scan" class="text-button" hidden data-i18n="cancelScan">取消查找</button>
+                <div id="game-confirmation" class="game-confirmation" hidden aria-labelledby="confirm-heading">
+                    <h3 id="confirm-heading" data-i18n="confirmHeading">请确认你的游戏</h3>
+                    <p id="detected-game-name" role="status" aria-live="polite"></p>
+                    <fieldset id="detected-game-choice" class="game-picker">
+                        <legend class="field-label" data-i18n="gameLabel">游戏</legend>
+                        <div id="detected-game-cards" class="game-grid"></div>
+                    </fieldset>
+                    <div class="confirmation-actions">
+                        <button type="button" class="primary-button" id="confirm-game" data-i18n="confirmGame">确认，查找日志</button>
+                        <button type="button" class="text-button" id="choose-again" data-i18n="chooseAgain">重新选择</button>
+                    </div>
+                </div>
+                <div id="auto-help" class="notice" hidden><p data-i18n="autoHelp">请确认选择的是游戏安装文件夹。日志可能尚未生成，也可能位于所选目录之外。</p><button type="button" class="text-button" id="switch-manual" data-i18n="viewManual">查看手动查找指引 →</button></div>
+            </section>
+
+            <section id="manual-panel" aria-labelledby="manual-heading" hidden>
+                <div class="step-heading"><span class="step-number">1</span><div><h2 id="manual-heading" data-i18n="gameHeading">选择你的游戏</h2><p data-i18n="gameDescription">我们会告诉你需要哪些文件，以及在哪里找到它们。</p></div></div>
+                <fieldset id="manual-game-choice" class="game-picker">
+                    <legend class="field-label" data-i18n="gameLabel">游戏</legend>
+                    <div id="game-cards" class="game-grid"></div>
+                </fieldset>
+                <div id="game-guide" hidden>
+                    <div class="guide-box"><h3 data-i18n="guideHeading">跟着下面的步骤找到文件</h3><ol id="guide-steps"></ol></div>
+                    <div id="expected-files" class="expected-files"></div>
+                    <div class="drop-zone compact" id="file-drop">
+                        <h3 data-i18n="dropFiles">把找到的日志和配置文件拖到这里</h3>
+                        <p data-i18n="multipleFiles">可以选择多个文件，也可以分多次添加。</p>
+                        <button type="button" class="primary-button" id="choose-files" data-i18n="chooseFiles">选择日志和配置文件</button>
+                        <input id="file-input" type="file" multiple hidden />
+                    </div>
+                </div>
+                <p id="manual-status" class="status" role="status" aria-live="polite"></p>
+            </section>
+
+            <section id="selection-section" class="selection-section" hidden aria-labelledby="selection-title">
+                <div class="selection-heading"><h3 id="selection-title" data-i18n="selectedFiles">已选择的文件</h3><span id="selection-summary"></span></div>
+                <ul id="selected-files" class="file-list"></ul>
+                <p id="missing-files" class="hint"></p>
+                <p class="hint" data-i18n="configNote">配置文件可能包含私人信息，请在发送前检查内容。</p>
+            </section>
+
+            <section class="identity-section" aria-labelledby="nickname-heading">
+                <div class="step-heading"><span class="step-number">2</span><div><h2 id="nickname-heading" data-i18n="nicknameHeading">告诉作者你是谁</h2><p data-i18n="nicknameDescription">填写你向作者求助时使用的昵称，方便对应问题。</p></div></div>
+                <label for="nickname" class="field-label"><span data-i18n="nicknameLabel">你的昵称</span> <span class="required" data-i18n="required">必填</span></label>
+                <input id="nickname" name="nickname" type="text" maxlength="60" autocomplete="off" spellcheck="false" required placeholder="例如：你在 Nexus Mods 上的昵称" />
+                <p class="hint" data-i18n="nicknameHint">昵称只用于这一次提交，不会创建账号。</p>
+            </section>
+
+            <div class="send-section"><div><strong data-i18n="sendHeading">确认后，交给作者排查</strong><p data-i18n="sendNote">请确认文件和昵称，再点击发送。</p><p id="upload-limits" class="hint"></p></div><button type="button" id="send-files" class="send-button" disabled>发送文件</button></div>
+            <progress id="upload-progress" max="100" value="0" hidden></progress>
+            <p id="upload-status" class="status" role="status" aria-live="polite"></p>
+            <div id="upload-receipt" class="notice" hidden><strong data-i18n="receiptHeading">提交编号</strong><code id="submission-id"></code><p data-i18n="receiptHint">把这个编号告诉作者，方便找到你的文件。</p></div>
+        </div>
+        <footer><span data-i18n="footer">为更轻松的 Mod 问题反馈而设计</span><span class="footer-dot" aria-hidden="true">·</span><span data-i18n="footerPrivacy">文件由你选择，发送由你确认</span></footer>
+    </main>
 </body>
 </html>

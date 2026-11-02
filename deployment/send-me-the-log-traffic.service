@@ -1,0 +1,18 @@
+# Managed by send-me-the-log deployment.
+[Unit]
+Description=Send Me The Log host traffic protection
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/send-me-the-log/traffic-monitor
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/bin/python3 -B /opt/send-me-the-log/traffic-monitor/traffic_monitor.py
+UMask=0077
+TimeoutStartSec=45
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/send-me-the-log/traffic-monitor

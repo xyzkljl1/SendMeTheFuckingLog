@@ -8,6 +8,8 @@ obj/
 *.suo
 AGENTS.md
 TODO.md
+data/
+__pycache__/
 .docker-ci/
 .ssh-*/
 .smoke/

@@ -1,4 +1,4 @@
-"""Executed in memory over SSH, as root. All deployment files stay under ROOT."""
+"""Executed over SSH as root. Only two project systemd units are installed outside ROOT."""
 import json
 import os
 from pathlib import Path
@@ -11,6 +11,10 @@ IMAGE = "ghcr.io/xyzkljl1/sendmethefuckinglog"
 SOURCE = "https://github.com/xyzkljl1/SendMeTheFuckingLog"
 APP_LABEL = "io.github.xyzkljl1.application"
 APP = "send-me-the-log"
+TRAFFIC_SERVICE = APP + "-traffic.service"
+TRAFFIC_TIMER = APP + "-traffic.timer"
+UNIT_DIRECTORY = Path("/etc/systemd/system")
+UNIT_MARKER = "# Managed by send-me-the-log deployment.\n"
 
 
 def run(*args, **kwargs):
@@ -32,25 +36,79 @@ def validate_payload(payload):
         raise ValueError("Invalid registry actor.")
 
 
-def plain(path):
+def plain(path, system_unit=False):
     # Check the path and every existing ancestor before any write or removal.
     for part in [path, *path.parents]:
         if part.is_symlink():
             raise RuntimeError(f"Refusing symlink in deployment path: {part}")
-    if not path.is_relative_to(ROOT):
+    if system_unit:
+        allowed = {UNIT_DIRECTORY / (name + suffix) for name in (TRAFFIC_SERVICE, TRAFFIC_TIMER)
+                   for suffix in ("", ".new")}
+        if path not in allowed:
+            raise RuntimeError("Unexpected systemd unit path.")
+    elif not path.is_relative_to(ROOT):
         raise RuntimeError("Path escapes the deployment directory.")
 
 
-def atomic_write(path, content):
-    plain(path)
+def atomic_write(path, content, system_unit=False):
+    plain(path, system_unit)
     staging = path.with_suffix(path.suffix + ".new")
-    plain(staging)
+    plain(staging, system_unit)
     with staging.open("w", encoding="utf-8", newline="\n") as stream:
-        os.chmod(staging, 0o600)
+        os.chmod(staging, 0o644 if system_unit else 0o600)
         stream.write(content)
         stream.flush()
         os.fsync(stream.fileno())
     staging.replace(path)
+
+
+def require_root_owner(path):
+    if path.stat().st_uid != 0:
+        raise RuntimeError("Traffic monitor directory must be owned by root.")
+
+
+def install_traffic_monitor(payload):
+    files = payload["traffic"]
+    expected = {"traffic_monitor.py", "traffic-limits.json", TRAFFIC_SERVICE, TRAFFIC_TIMER}
+    if set(files) != expected or any(not isinstance(value, str) for value in files.values()):
+        raise ValueError("Missing or unexpected traffic monitor deployment files.")
+    compile(files["traffic_monitor.py"], "traffic_monitor.py", "exec")
+    limits = json.loads(files["traffic-limits.json"])
+    if (set(limits) != {"DailyTrafficLimitGB", "MonthlyTrafficLimitGB"}
+            or any(type(value) is not int or not 1 <= value <= 1_000_000 for value in limits.values())):
+        raise ValueError("Invalid traffic limits.")
+    directory = ROOT / "traffic-monitor"
+    plain(directory)
+    directory.mkdir(mode=0o700, exist_ok=True)
+    require_root_owner(directory)
+    os.chmod(directory, 0o700)
+    for name in (TRAFFIC_SERVICE, TRAFFIC_TIMER):
+        path = UNIT_DIRECTORY / name
+        plain(path, system_unit=True)
+        if not files[name].startswith(UNIT_MARKER):
+            raise ValueError("Unit ownership marker is missing.")
+        if path.exists() and (not path.is_file() or not path.read_text(encoding="utf-8").startswith(UNIT_MARKER)):
+            raise RuntimeError(f"Refusing to replace an unrelated systemd unit: {path}")
+    # Preflight before stopping an existing monitor. No extra packages or credentials are installed.
+    run("systemctl", "--version", stdout=subprocess.DEVNULL)
+    run("ip", "-j", "route", "show", "default", stdout=subprocess.DEVNULL)
+    run("/usr/bin/python3", "--version", stdout=subprocess.DEVNULL)
+    # A first install has no units to stop; an update waits for the old sample to finish/stop.
+    if (UNIT_DIRECTORY / TRAFFIC_TIMER).exists():
+        run("systemctl", "stop", TRAFFIC_TIMER, TRAFFIC_SERVICE, timeout=60)
+    for name in ("traffic_monitor.py", "traffic-limits.json"):
+        atomic_write(directory / name, files[name])
+    for name in (TRAFFIC_SERVICE, TRAFFIC_TIMER):
+        atomic_write(UNIT_DIRECTORY / name, files[name], system_unit=True)
+    # Never touch traffic-state.json: deployment and host restart both retain usage.
+    run("systemctl", "daemon-reload")
+    run("systemctl", "enable", "--now", TRAFFIC_TIMER)
+    run("systemctl", "start", TRAFFIC_SERVICE, timeout=60)
+    run("systemctl", "is-enabled", "--quiet", TRAFFIC_TIMER)
+    run("systemctl", "is-active", "--quiet", TRAFFIC_TIMER)
+    if output("systemctl", "show", TRAFFIC_SERVICE, "--property=Result", "--value") != "success":
+        raise RuntimeError("Traffic protection's first check failed.")
+    print("TRAFFIC MONITOR: installed, timer enabled/active, first check succeeded.", flush=True)
 
 
 def inspect_container():
@@ -69,6 +127,17 @@ def check_container(container, run_number):
         raise RuntimeError("Existing container is not managed by this deployment. One-time migration is required.")
     if int(labels.get("io.github.xyzkljl1.deployment-run", "0")) > int(run_number):
         raise RuntimeError("A newer workflow has already deployed; refusing stale deployment.")
+
+
+def reset_request_counts():
+    # Called only after the old writer has stopped. Uploads and host traffic state are untouched.
+    for name in (".request-counts.json", ".request-counts.json.new"):
+        path = ROOT / "app" / "data" / name
+        plain(path)
+        if path.exists():
+            if not path.is_file():
+                raise RuntimeError("Request counter path is not a regular file.")
+            path.unlink()
 
 
 def cleanup_images(current_id):
@@ -117,6 +186,7 @@ def main(payload):
         run("docker", "info", stdout=subprocess.DEVNULL)
         run("docker", "compose", "version")
         check_container(inspect_container(), payload["run"])
+        install_traffic_monitor(payload)
         # Reuse the test deployment's data path; no copying or deleting uploads.
         for directory in (ROOT / "app" / "data", ROOT / "app" / "tmp"):
             plain(directory)
@@ -145,9 +215,14 @@ def main(payload):
             compose = docker + ["compose", "--project-name", APP, "--project-directory", str(ROOT),
                                 "--env-file", str(ROOT / "image.env"), "-f", str(ROOT / "compose.yaml")]
             run(*compose, "config", "--quiet")
-            # No down step and no automatic rollback. Failed starts are reported;
-            # old images remain until a subsequent successful deployment.
-            run(*compose, "up", "--detach", "--no-build", "--pull", "never",
+            # Never clear counters while the old process can checkpoint them again.
+            run(*compose, "stop", "--timeout", "30", "web", timeout=60)
+            stopped = inspect_container()
+            if stopped and stopped["State"]["Running"]:
+                raise RuntimeError("Old application is still running; request counters were not reset.")
+            reset_request_counts()
+            # No automatic rollback; failed starts leave old images available for investigation.
+            run(*compose, "up", "--detach", "--force-recreate", "--no-build", "--pull", "never",
                 "--wait", "--wait-timeout", "120", "web", timeout=180)
             current = inspect_container()
             if (not current or current["Image"] != image_info["Id"]

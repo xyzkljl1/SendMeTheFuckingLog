@@ -1,0 +1,14 @@
+{
+  "id": "fake-game",
+  "name": { "zh": "演示游戏", "en": "Fake Game" },
+  "image": "/images/games/fake-game.svg",
+  "isDemo": true,
+  "executablePaths": [],
+  "instructions": [
+    {
+      "zh": "这是一款虚构游戏，仅用于展示图片和单选控件，不提供日志上传。请选择影之刃零进行实际操作。",
+      "en": "This fictional game demonstrates the image selection cards. Uploads are unavailable. Choose Phantom Blade Zero to submit real files."
+    }
+  ],
+  "files": []
+}

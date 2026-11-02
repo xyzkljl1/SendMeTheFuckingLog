@@ -30,6 +30,9 @@ def main():
         "image": os.environ["APP_IMAGE"], "actor": os.environ["GITHUB_ACTOR"],
         "revision": os.environ["GITHUB_SHA"], "run": os.environ["GITHUB_RUN_NUMBER"],
         "token": os.environ["GH_TOKEN"],
+        "traffic": {name: (root / "deployment" / name).read_text(encoding="utf-8") for name in (
+            "traffic_monitor.py", "traffic-limits.json", "send-me-the-log-traffic.service",
+            "send-me-the-log-traffic.timer")},
     }
     bootstrap = "import json,sys; p=json.load(sys.stdin); exec(compile(p.pop('script'),'<deployment>','exec')); main(p)"
     # Temporary credentials are inside the checkout and removed even on failure.
