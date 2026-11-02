@@ -1,7 +1,7 @@
 {
   "id": "phantom-blade-zero",
   "name": { "zh": "影之刃零", "en": "Phantom Blade Zero" },
-  "image": "games/phantom-blade-zero.jpg",
+  "image": "games/phantom-blade-zero.webp",
   "executablePaths": ["platform/steam/PBZ.exe", "steam/PBZ.exe"],
   "instructions": [
     {

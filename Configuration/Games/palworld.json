@@ -1,7 +1,7 @@
 {
   "id": "palworld",
   "name": { "zh": "幻兽帕鲁", "en": "Palworld" },
-  "image": "games/palworld.jpg",
+  "image": "games/palworld.webp",
   "executablePaths": [],
   "instructions": [
     {
