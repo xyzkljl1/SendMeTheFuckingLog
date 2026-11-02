@@ -10,8 +10,8 @@
       "images": ["guides/steam-open-palworld-{lang}.gif"]
     },
     {
-      "zh": "依次打开 Pal → Binaries → Win64 → ue4ss，选中 UE4SS.log，拖入日志上传区域。",
-      "en": "Open Pal → Binaries → Win64 → ue4ss, select UE4SS.log and drag it into the log upload area.",
+      "zh": "打开 Pal\\Binaries\\Win64\\ue4ss 目录，选中 UE4SS.log，拖入日志上传区域。",
+      "en": "Open the Pal\\Binaries\\Win64\\ue4ss folder, select UE4SS.log and drag it into the log upload area.",
       "images": ["guides/navigate-palworld-ue4ss-log-{lang}.gif"]
     },
     {

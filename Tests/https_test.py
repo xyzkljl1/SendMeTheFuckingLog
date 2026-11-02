@@ -9,10 +9,28 @@ import shutil
 import socket
 import ssl
 import subprocess
+import sys
 import tempfile
 import time
 
 DOMAIN = "www.sendmethefuckinglog.top"
+
+
+def wait_for_startup(probe, is_running, timeout=30):
+    deadline = time.monotonic() + timeout
+    last = "HTTP health check is not ready"
+    while time.monotonic() < deadline:
+        if not is_running():
+            raise RuntimeError("TLS test process exited during startup.")
+        try:
+            if probe(deadline):
+                return
+        except (ConnectionError, TimeoutError, ssl.SSLEOFError,
+                http.client.RemoteDisconnected, subprocess.TimeoutExpired) as error:
+            # Retry only transient startup failures; certificate errors must fail immediately.
+            last = str(error)
+        time.sleep(min(0.1, max(0, deadline - time.monotonic())))
+    raise RuntimeError(f"TLS test startup timed out after {timeout}s: {last}")
 
 
 def main():
@@ -63,28 +81,46 @@ def main():
         context = ssl.create_default_context(cafile=str(cert))
         container = "send-me-the-log-tls-smoke"
 
-        def request(path, secure=False, method="GET", host=DOMAIN):
-            connection = http.client.HTTPConnection("127.0.0.1", https_port if secure else http_port, timeout=3)
-            if secure:
-                raw = socket.create_connection(("127.0.0.1", https_port), timeout=3)
-                connection.sock = context.wrap_socket(raw, server_hostname=DOMAIN)
+        def request(path, secure=False, method="GET", host=DOMAIN, timeout=3):
+            connection = http.client.HTTPConnection("127.0.0.1", https_port if secure else http_port, timeout=timeout)
             try:
+                if secure:
+                    raw = socket.create_connection(("127.0.0.1", https_port), timeout=timeout)
+                    try:
+                        connection.sock = context.wrap_socket(raw, server_hostname=DOMAIN)
+                    except BaseException:
+                        raw.close()
+                        raise
                 connection.request(method, path, headers={"Host": host})
                 response = connection.getresponse()
                 return response.status, dict(response.getheaders()), response.read()
             finally:
                 connection.close()
 
-        def healthy():
+        def healthy(timeout=3):
             if not image:
-                return request("/healthz")[0] == 200
+                return request("/healthz", timeout=timeout)[0] == 200
             return subprocess.run(["docker", "exec", container, "bash", "/app/healthcheck.sh"],
-                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                  timeout=timeout).returncode == 0
 
-        def start():
+        def report_failure(process):
+            print(f"TLS test process exit code: {process.poll()}", flush=True)
+            if image:
+                for command in (["docker", "inspect", "--format",
+                                 "Status={{.State.Status}} ExitCode={{.State.ExitCode}} OOMKilled={{.State.OOMKilled}} Error={{.State.Error}}", container],
+                                ["docker", "logs", "--tail", "100", container]):
+                    try:
+                        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                                text=True, timeout=10)
+                        print(result.stdout, flush=True)
+                    except (OSError, subprocess.TimeoutExpired) as error:
+                        print(f"Unable to collect container diagnostics: {error}", flush=True)
+
+        def start(secure=False):
             command = ["dotnet", str(app / "SendMeTheFuckingLog.dll")]
             if image:
-                command = ["docker", "run", "--rm", "--name", container, "--init", "--read-only",
+                command = ["docker", "run", "--name", container, "--init", "--read-only",
                            "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
                            "--memory", "128m", "--memory-swap", "128m", "--pids-limit", "128",
                            "--publish", f"127.0.0.1:{http_port}:8080", "--publish", f"127.0.0.1:{https_port}:8443"]
@@ -96,29 +132,52 @@ def main():
             process = subprocess.Popen(command, cwd=project,
                                        env=environment, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
-            last = "not ready"
-            for _ in range(100):
-                if process.poll() is not None:
-                    raise RuntimeError(process.communicate()[0].decode(errors="replace"))
-                try:
-                    last = healthy()
-                    if last:
-                        return process
-                except OSError as error:
-                    last = str(error)
-                time.sleep(0.1)
-            if image:
-                subprocess.run(["docker", "rm", "--force", container], stdout=subprocess.DEVNULL, check=True)
-            else:
-                process.terminate()
-            raise RuntimeError("TLS test startup failed: " + str(last) + "\n" + process.communicate(timeout=10)[0].decode(errors="replace"))
+            def probe(deadline):
+                if not healthy(timeout=min(3, max(0.001, deadline - time.monotonic()))):
+                    return False
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                # Exercise the host's published port without consuming the request quota.
+                status, _, body = request(challenge, secure=secure, timeout=min(3, remaining))
+                if status != 200 or body != b"test authorization":
+                    raise RuntimeError(f"Startup challenge probe returned an unexpected response: HTTP {status}")
+                return True
 
-        def stop(process):
-            if image:
-                subprocess.run(["docker", "stop", "--time", "150", container], check=True, stdout=subprocess.DEVNULL)
-            else:
-                process.terminate()
-            process.communicate(timeout=10)
+            try:
+                wait_for_startup(probe, lambda: process.poll() is None)
+                return process
+            except BaseException:
+                stop(process, failed=True)
+                raise
+
+        def stop(process, failed=False):
+            if failed:
+                report_failure(process)
+            try:
+                if image:
+                    subprocess.run(["docker", "stop", "--time", "150", container], check=True,
+                                   stdout=subprocess.DEVNULL, timeout=160)
+                elif process.poll() is None:
+                    process.terminate()
+                output = process.communicate(timeout=10)[0]
+                if failed and output:
+                    print(output.decode(errors="replace"), flush=True)
+            except (OSError, subprocess.SubprocessError) as error:
+                if not failed:
+                    report_failure(process)
+                    raise
+                print(f"TLS test cleanup failed: {error}", flush=True)
+            finally:
+                if image:
+                    # Retain stopped containers until their exit/OOM state and logs have been reported.
+                    try:
+                        subprocess.run(["docker", "rm", "--force", container], check=True,
+                                       stdout=subprocess.DEVNULL, timeout=10)
+                    except (OSError, subprocess.SubprocessError) as error:
+                        if not failed:
+                            raise
+                        print(f"Unable to remove test container: {error}", flush=True)
 
         token = app / "acme" / ".well-known" / "acme-challenge" / "test_token-123"
         token.parent.mkdir(parents=True)
@@ -134,7 +193,7 @@ def main():
             assert request("/.well-known/acme-challenge/../private.pem")[0] in (404, 503)
             assert request("/.well-known/acme-challenge/missing")[0] == 404
         finally:
-            stop(process)
+            stop(process, failed=sys.exc_info()[0] is not None)
 
         if os.name == "nt" and not image:
             print("PASS: HTTP validation-only bootstrap and challenge path isolation.")
@@ -148,7 +207,7 @@ def main():
         shutil.copyfile(key, destination / "privkey.pem")
         manifest = app / "tls" / "active.json"
         manifest.write_text(json.dumps({"version": 1, "generation": generation}), encoding="ascii")
-        process = start()
+        process = start(secure=True)
         try:
             status, headers, _ = request("/path?q=1", host="attacker.invalid")
             assert status == 308 and headers["Location"] == "https://" + DOMAIN + "/path?q=1"
@@ -174,13 +233,13 @@ def main():
             else:
                 raise RuntimeError("TLS test quota was not checkpointed.")
         finally:
-            stop(process)
-        process = start()
+            stop(process, failed=sys.exc_info()[0] is not None)
+        process = start(secure=True)
         try:
             assert request("/", secure=True)[0] == 429
             assert request(challenge)[2] == b"test authorization"
         finally:
-            stop(process)
+            stop(process, failed=sys.exc_info()[0] is not None)
         print("PASS: bootstrap, trusted test TLS, canonical redirect, key isolation, ACME under exhausted quota, restart persistence.")
 
 

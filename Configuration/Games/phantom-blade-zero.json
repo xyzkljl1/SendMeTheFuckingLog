@@ -10,8 +10,8 @@
       "images": ["guides/steam-open-phantom-blade-zero-demo-{lang}.gif"]
     },
     {
-      "zh": "依次打开 platform → steam → ue4ss，选中 UE4SS.log，拖入日志上传区域。",
-      "en": "Open platform → steam → ue4ss, select UE4SS.log and drag it into the log upload area.",
+      "zh": "打开 platform\\steam\\ue4ss 目录，选中 UE4SS.log，拖入日志上传区域。",
+      "en": "Open the platform\\steam\\ue4ss folder, select UE4SS.log and drag it into the log upload area.",
       "images": ["guides/navigate-phantom-blade-zero-ue4ss-log-{lang}.gif"]
     },
     {
