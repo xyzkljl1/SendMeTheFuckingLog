@@ -3,11 +3,12 @@ name: Deploy to Linux
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 # Never interrupt a deployment halfway through a container replacement or cleanup.
 concurrency:
-  group: send-me-the-log-production
+  group: send-me-the-log-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -15,8 +16,43 @@ permissions:
   packages: write
 
 jobs:
+  tests:
+    name: Program functional tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/obj/playwright
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+    steps:
+      - name: Check out the triggering commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build the unified test project
+        run: dotnet build Tests/FunctionalTests/FunctionalTests.csproj --configuration Release
+      - name: Install Chromium on the runner
+        shell: pwsh
+        run: ./Tests/FunctionalTests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+      - name: Run program tests
+        run: dotnet test Tests/FunctionalTests/FunctionalTests.csproj --configuration Release --no-build --logger trx --results-directory obj/test-results
+      - name: Save test reports and failure screenshots and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: functional-test-results-${{ github.run_attempt }}
+          path: obj/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
   deploy:
-    if: github.ref == 'refs/heads/main'
+    needs: tests
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -101,9 +137,6 @@ jobs:
           done
           docker rm --force send-me-the-log-smoke
 
-      - name: Test HTTPS in the Linux image
-        run: python3 -B Tests/https_test.py --image "$IMAGE_TAG"
-
       - name: Publish the public image
         id: publish
         env:
@@ -144,9 +177,6 @@ jobs:
         run: |
           if docker container inspect send-me-the-log-smoke >/dev/null 2>&1; then
             docker rm --force send-me-the-log-smoke
-          fi
-          if docker container inspect send-me-the-log-tls-smoke >/dev/null 2>&1; then
-            docker rm --force send-me-the-log-tls-smoke
           fi
           python3 - <<'PY'
           import os, shutil

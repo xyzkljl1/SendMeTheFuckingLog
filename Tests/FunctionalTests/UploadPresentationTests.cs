@@ -5,26 +5,8 @@ namespace FunctionalTests;
 
 public sealed class UploadPresentationTests
 {
-    private static async Task InBrowser(Func<IPage, Task> check)
-    {
-        await using var world = new TestWorld();
-        var app = world.Start(browser: true);
-        using var client = app.Client();
-        using var playwright = await Playwright.CreateAsync();
-        await using var browser = await playwright.Chromium.LaunchAsync(new() { Headless = true });
-        await using var context = await browser.NewContextAsync(new()
-        {
-            BaseURL = client.BaseAddress!.ToString(), Locale = "en-US",
-            ViewportSize = new() { Width = 1365, Height = 900 }
-        });
-        var page = await context.NewPageAsync();
-        var errors = new List<string>();
-        page.PageError += (_, error) => errors.Add(error);
-        await page.GotoAsync("/", new() { WaitUntil = WaitUntilState.DOMContentLoaded });
-        await Expect(page.Locator("#author-name")).Not.ToBeEmptyAsync();
-        await check(page);
-        Assert.Empty(errors);
-    }
+    private static Task InBrowser(Func<IPage, Task> check, [System.Runtime.CompilerServices.CallerMemberName] string name = "") =>
+        BrowserTests.InBrowser(name, (_, _, page) => check(page));
 
     private static FilePayload File(string name, int bytes) => new()
     {

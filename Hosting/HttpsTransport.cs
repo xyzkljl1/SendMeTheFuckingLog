@@ -6,21 +6,24 @@ namespace SendMeTheFuckingLog.Hosting;
 
 public sealed class HttpsTransport : IDisposable
 {
-    private readonly string challengeRoot = Path.Combine(AppContext.BaseDirectory, "acme", ".well-known", "acme-challenge");
+    private readonly string challengeRoot;
+    private readonly int httpPort;
+    private readonly int httpsPort;
     private readonly X509Certificate2? certificate;
     private readonly X509Certificate2Collection chain = [];
     public bool Enabled { get; }
     public bool Ready => certificate is not null;
     public string Domain { get; } = "";
 
-    public HttpsTransport(WebApplicationBuilder builder)
+    public HttpsTransport(IConfiguration configuration, ApplicationPaths paths)
     {
-        Enabled = builder.Configuration.GetValue<bool>("Tls:Enabled");
+        challengeRoot = Path.Combine(paths.Root, "acme", ".well-known", "acme-challenge");
+        Enabled = configuration.GetValue<bool>("Tls:Enabled");
         if (!Enabled) return; // Local development and pre-publish smoke checks remain HTTP.
-        Domain = builder.Configuration["Tls:Domain"] ?? "";
+        Domain = configuration["Tls:Domain"] ?? "";
         if (Domain.Length > 253 || !Regex.IsMatch(Domain, @"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$"))
             throw new InvalidOperationException("Tls:Domain must be a DNS hostname without a scheme or port.");
-        var root = Path.Combine(AppContext.BaseDirectory, "tls");
+        var root = Path.Combine(paths.Root, "tls");
         var manifestPath = Path.Combine(root, "active.json");
         EnsurePlain(manifestPath);
         if (File.Exists(manifestPath))
@@ -42,20 +45,22 @@ public sealed class HttpsTransport : IDisposable
             // Keep an expired certificate loadable so HTTP-01 can repair it after a long shutdown.
             chain.ImportFromPem(File.ReadAllText(fullchain));
         }
-        var httpPort = builder.Configuration.GetValue("Tls:HttpPort", 8080);
-        var httpsPort = builder.Configuration.GetValue("Tls:HttpsPort", 8443);
+        httpPort = configuration.GetValue("Tls:HttpPort", 8080);
+        httpsPort = configuration.GetValue("Tls:HttpsPort", 8443);
         if (httpPort is < 1 or > 65535 || httpsPort is < 1 or > 65535 || httpPort == httpsPort)
             throw new InvalidOperationException("Invalid TLS listening ports.");
-        builder.WebHost.ConfigureKestrel(server =>
-        {
-            server.ListenAnyIP(httpPort);
-            if (certificate is not null)
-                server.ListenAnyIP(httpsPort, endpoint => endpoint.UseHttps(https =>
-                {
-                    https.ServerCertificate = certificate;
-                    https.ServerCertificateChain = chain;
-                }));
-        });
+    }
+
+    public void ConfigureEndpoints(Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions server)
+    {
+        if (!Enabled) return;
+        server.ListenAnyIP(httpPort);
+        if (certificate is not null)
+            server.ListenAnyIP(httpsPort, endpoint => endpoint.UseHttps(https =>
+            {
+                https.ServerCertificate = certificate;
+                https.ServerCertificateChain = chain;
+            }));
     }
 
     public async Task<bool> HandleChallengeAsync(HttpContext context)

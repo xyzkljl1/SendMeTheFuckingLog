@@ -19,16 +19,14 @@ public sealed class RequestCounter : BackgroundService
     private bool dirty;
     private bool storageHealthy = true;
 
-    public RequestCounter(RequestLimits limits, TimeProvider clock, ILogger<RequestCounter> logger)
-        : this(limits, clock, logger, Path.Combine(AppContext.BaseDirectory, "data", ".request-counts.json")) { }
-
-    internal RequestCounter(RequestLimits limits, TimeProvider clock, ILogger<RequestCounter> logger, string path)
+    public RequestCounter(RequestLimits limits, TimeProvider clock, ILogger<RequestCounter> logger,
+        SendMeTheFuckingLog.Hosting.ApplicationPaths paths)
     {
         limits.Validate();
         this.limits = [limits.MaxRequestsPerHour, limits.MaxRequestsPerDay, limits.MaxRequestsPerWeek];
         this.clock = clock;
         this.logger = logger;
-        this.path = path;
+        path = Path.Combine(paths.Data, ".request-counts.json");
     }
 
     public void Initialize()

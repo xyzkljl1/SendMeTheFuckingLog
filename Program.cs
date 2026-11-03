@@ -10,21 +10,32 @@ using SendMeTheFuckingLog.Hosting;
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    using var https = new HttpsTransport(builder);
+    builder.Services.AddSingleton(new ApplicationPaths(AppContext.BaseDirectory));
+    builder.Services.AddSingleton<HttpsTransport>();
     builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(140));
-    var storageLimits = builder.Configuration.GetSection("Storage").Get<StorageLimits>() ?? new StorageLimits();
-    storageLimits.Validate();
-    var requestLimits = builder.Configuration.GetSection("GlobalRateLimit").Get<RequestLimits>() ?? new RequestLimits();
-    requestLimits.Validate();
-    builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = storageLimits.RequestBytes);
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.Limits.MaxRequestBodySize = options.ApplicationServices.GetRequiredService<StorageLimits>().RequestBytes;
+        options.ApplicationServices.GetRequiredService<HttpsTransport>().ConfigureEndpoints(options);
+    });
 
     builder.Services.AddRazorPages();
     builder.Services.Configure<UploadPageOptions>(builder.Configuration.GetSection("UploadPage"));
     builder.Services.AddSingleton<GameCatalog>();
     builder.Services.AddSingleton<HostedImageUrls>();
-    builder.Services.AddSingleton(storageLimits);
+    builder.Services.AddSingleton(services =>
+    {
+        var limits = services.GetRequiredService<IConfiguration>().GetSection("Storage").Get<StorageLimits>() ?? new();
+        limits.Validate();
+        return limits;
+    });
     builder.Services.AddSingleton<SubmissionStore>();
-    builder.Services.AddSingleton(requestLimits);
+    builder.Services.AddSingleton(services =>
+    {
+        var limits = services.GetRequiredService<IConfiguration>().GetSection("GlobalRateLimit").Get<RequestLimits>() ?? new();
+        limits.Validate();
+        return limits;
+    });
     builder.Services.AddSingleton(TimeProvider.System);
     builder.Services.AddSingleton<IDomainAddressResolver, DomainAddressResolver>();
     builder.Services.AddSingleton<AuthorAccess>();
@@ -38,6 +49,7 @@ try
         .AddKeyManagementOptions(options => options.XmlRepository = new InMemoryKeyRepository());
 
     var app = builder.Build();
+    var https = app.Services.GetRequiredService<HttpsTransport>();
     app.Services.GetRequiredService<SubmissionStore>().Initialize();
     var requestCounter = app.Services.GetRequiredService<RequestCounter>();
     requestCounter.Initialize();
@@ -89,11 +101,14 @@ try
     app.MapPost("/api/uploads", UploadEndpoint.HandleAsync);
     app.Run();
 }
+catch (HostAbortedException) { throw; }
 catch (Exception exception)
 {
     Console.Error.WriteLine(exception);
     Environment.ExitCode = 1;
 }
+
+public partial class Program { }
 
 sealed class InMemoryKeyRepository : IXmlRepository
 {

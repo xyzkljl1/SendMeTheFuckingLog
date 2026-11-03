@@ -2,11 +2,11 @@ using System.Text.Json;
 
 namespace SendMeTheFuckingLog.Monitoring;
 
-public sealed class TrafficStatusReader
+public sealed class TrafficStatusReader(SendMeTheFuckingLog.Hosting.ApplicationPaths paths)
 {
     public TrafficStatus? Read()
     {
-        var root = Path.Combine(AppContext.BaseDirectory, "monitor-status");
+        var root = Path.Combine(paths.Root, "monitor-status");
         var file = Path.Combine(root, "traffic.json");
         if (!File.Exists(file)) return null;
         foreach (var path in new[] { root, file })

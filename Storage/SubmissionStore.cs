@@ -20,7 +20,7 @@ public sealed partial class SubmissionStore : IDisposable
     private readonly StorageLimits limits;
     private readonly GameCatalog catalog;
     private readonly ILogger<SubmissionStore> logger;
-    private readonly string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "data"));
+    private readonly string root;
     private readonly SemaphoreSlim gate = new(1, 1);
     private readonly SemaphoreSlim uploadSlots = new(3, 3);
     private readonly Dictionary<string, long> reservations = new(StringComparer.Ordinal);
@@ -59,11 +59,13 @@ public sealed partial class SubmissionStore : IDisposable
         finally { gate.Release(); }
     }
 
-    public SubmissionStore(StorageLimits limits, GameCatalog catalog, ILogger<SubmissionStore> logger)
+    public SubmissionStore(StorageLimits limits, GameCatalog catalog, ILogger<SubmissionStore> logger,
+        SendMeTheFuckingLog.Hosting.ApplicationPaths paths)
     {
         this.limits = limits;
         this.catalog = catalog;
         this.logger = logger;
+        root = Path.GetFullPath(paths.Data);
     }
 
     public void Initialize()
