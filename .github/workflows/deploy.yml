@@ -111,6 +111,7 @@ jobs:
             exit 1
           fi
           bash -n deployment/healthcheck.sh
+          bash -n deployment/init-ubuntu.sh
           APP_IMAGE="$IMAGE@sha256:$(printf '0%.0s' {1..64})" DEPLOY_RUN=1 docker compose config --quiet
           printf 'IMAGE_TAG=%s:sha-%s-run-%s-%s\n' "$IMAGE" "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
 

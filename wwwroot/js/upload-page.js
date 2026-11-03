@@ -481,6 +481,7 @@
         $("nickname-step-number").textContent = state.route === "manual" ? "3" : "2";
         renderDragInstruction();
         renderGuideImages($("automatic-guide"), config.automaticGuideImages || [], text("automaticGuideAlt"));
+        $("supported-games-sidebar").hidden = state.route !== "auto";
         const supported = games.filter(game => !game.isDemo);
         $("supported-games").replaceChildren();
         for (const game of supported) {

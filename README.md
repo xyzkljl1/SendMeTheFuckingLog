@@ -20,12 +20,35 @@
 ## 部署前准备
 
 - GitHub 仓库和 Linux x86_64 服务器。
-- 服务器安装 systemd、Python 3、提供 `ip` 命令的工具，以及 [Docker Engine 和 Compose 插件](https://docs.docker.com/engine/install/ubuntu/)。
+- 服务器安装 systemd、Python 3、提供 `ip` 命令的工具，以及 [Docker Engine 和 Compose 插件](https://docs.docker.com/engine/install/ubuntu/)。全新的 Ubuntu 24.04 x86_64 服务器可使用下面的初始化脚本。
 - SSH 部署账号支持密钥登录，并能通过 `sudo -n` 执行 Python 3。
 - 网站域名解析到服务器，开放 TCP 80、443 和 SSH 端口。
 - 图片托管地址，配置方式见下文。
 
 当前网站容器内存上限为 128 MiB，临时证书容器上限为 256 MiB。
+
+### 首次初始化服务器
+
+登录服务器，下载自己仓库中的 [deployment/init-ubuntu.sh](deployment/init-ubuntu.sh)。将下面的 `OWNER/REPOSITORY` 替换为自己的 GitHub 仓库：
+
+```bash
+curl -fL https://raw.githubusercontent.com/OWNER/REPOSITORY/main/deployment/init-ubuntu.sh -o init-ubuntu.sh
+sudo bash init-ubuntu.sh
+```
+
+也可以通过 SFTP 上传脚本。已下载完整仓库时，在仓库根目录执行 `sudo bash deployment/init-ubuntu.sh`。
+
+脚本支持 **Ubuntu 24.04、x86_64（amd64）、systemd**，依次检查环境、安装基础依赖、添加 Docker 官方软件源、安装 Docker Engine 和 Compose、启用并检查 Docker 服务。脚本以 root 写入系统软件源和软件包目录；相关软件包按需安装或升级，已有软件包不会被自动移除。
+
+执行时会显示每条命令及原始输出。任一命令失败立即停止，末尾的 `ERROR` 显示脚本行号、退出码和失败命令。根据该命令的输出排查，也可在服务器终端使用 `sudo` 单独执行失败命令；修正后重新运行脚本即可。
+
+初始化成功后，完成这些设置：
+
+- 将网站域名解析到服务器。在云防火墙及已启用的系统防火墙中开放 TCP 80、443 和 SSH 端口（默认 22）。
+- 配置部署账号的 SSH 公钥和免密 sudo。用该账号运行 `sudo -n python3 --version`，应直接输出版本。
+- 按下文填写网站配置以及 GitHub Variables、Secrets，再运行部署工作流。
+
+初始化脚本只准备服务器依赖。网站、证书和监控由现有 Actions 部署；后续版本更新直接使用 Actions。
 
 ## 配置自己的网站
 
