@@ -8,15 +8,14 @@
     const $ = id => document.getElementById(id);
     const messages = {
         zh: {
-            title: "上传日志",
+            title: "上传日志给",
             guideImageOpen: "点击放大", guideImageUnavailable: "演示图片暂时无法加载，请按文字指引操作。",
             automaticGuideAlt: "操作示例：从 Steam 打开游戏目录，鼠标框选全部内容（也可按 Ctrl+A），再拖入上传区域。",
-            recipientBefore: "发送给",
             chooseRoute: "选择方式", autoTitle: "自动选择日志", manualTitle: "手动选择日志",
-            folderHeading: "打开游戏本地文件", folderDescription: "Steam 中右键游戏 → 管理 → 浏览本地文件。",
+            folderHeading: "将整个游戏文件夹拖入", folderDescription: "Steam 中右键游戏 → 管理 → 浏览本地文件。",
             dragInstruction: "全选文件，拖入右侧区域。", dragInstructionBelow: "全选文件，拖入下方区域。",
-            dropFolder: "拖到这里", chooseFolder: "选择游戏文件夹",
-            folderPrivacy: "仅上传匹配的日志和配置", supported: "支持的游戏",
+            dropFolder: "拖到这里", chooseFolder: "浏览文件",
+            folderPrivacy: "不会上传整个游戏，只会上传日志", supported: "支持的游戏",
             identifying: "正在识别游戏… 文件不会发送。", droppedContents: "拖入的内容",
             detectedGame: "已识别游戏", multipleGames: "识别到多个游戏，请只拖入一个游戏的安装文件夹，或使用手动选择日志。",
             gameNotFound: "没有识别到支持的游戏。请从 Steam 打开本地文件后全选拖入，确保包含游戏程序，或使用手动上传。",
@@ -28,9 +27,9 @@
             primaryFile: "必需", secondaryNote: "（只有作者要求时才需要上传）",
             missingRequired: "请先添加必须上传的日志。", missingPrimary: "还需要添加 {names}。",
             chooseFiles: "选择文件", selectedFiles: "已选择的文件",
-            nicknameHeading: "输入昵称",
-            nicknamePlaceholder: "Nexus ID 或常用昵称",
-            send: "发送给 {author}", sent: "已保存",
+            nicknameHeading: "输入昵称：",
+            nicknamePlaceholder: "例如N网Id",
+            send: "发送", sent: "已保存",
             fileTooLarge: "{name} 为 {size}，超过单个文件限制 {limit}。",
             totalTooLarge: "文件合计 {size}，超过总大小限制 {limit}。",
             preparing: "正在检查文件…", uploading: "正在上传… {percent}%", saving: "正在发送…",
@@ -47,7 +46,7 @@
             copy: "复制目录", copied: "已复制", copyFailed: "无法复制，请选中路径手动复制。",
             scanning: "正在检查 {folder}… 文件不会发送。", found: "找到日志了！",
             notFound: "在 {folder} 中没有找到诊断文件。请按手动指引检查日志位置。", folderOnly: "请拖入整个游戏文件夹，或全选游戏文件夹里的内容一起拖入。",
-            folderUnsupported: "此浏览器不支持拖入文件夹，请使用「选择文件夹」按钮。",
+            folderUnsupported: "此浏览器不支持拖入文件夹，请使用「浏览文件」按钮。",
             pickerUnsupported: "此浏览器不支持选择文件夹，请使用手动选择文件，或更新浏览器。",
             cancelled: "已取消查找。你可以重新选择文件夹。", scanError: "无法完整读取文件夹，请检查访问权限后重试，或使用手动选择文件。",
             tooMany: "所选目录包含过多项目，请选择具体的游戏安装文件夹。", summary: "{count} 个文件 · {size}",
@@ -57,15 +56,14 @@
             filesOnly: "请添加文件，不要添加文件夹。", pickGameFirst: "请先选择游戏。", selected: "已添加", notSelected: "尚未添加"
         },
         en: {
-            title: "Upload logs",
+            title: "Upload logs to",
             guideImageOpen: "View full size", guideImageUnavailable: "The guide image could not load. Please follow the written steps.",
             automaticGuideAlt: "Example: open your game's folder from Steam, drag a selection box around all items (or press Ctrl+A), then drag them into the upload area.",
-            recipientBefore: "Send to",
             chooseRoute: "Choose a method", autoTitle: "Select logs automatically", manualTitle: "Select logs manually",
-            folderHeading: "Open your game's local files", folderDescription: "In Steam, right-click the game → Manage → Browse local files.",
+            folderHeading: "Drag in the entire game folder", folderDescription: "In Steam, right-click the game → Manage → Browse local files.",
             dragInstruction: "Select all files and drag them into the area on the right.", dragInstructionBelow: "Select all files and drag them into the area below.",
-            dropFolder: "Drop here", chooseFolder: "Choose game folder",
-            folderPrivacy: "Only matching logs and settings are uploaded", supported: "Supported games",
+            dropFolder: "Drop here", chooseFolder: "Browse files",
+            folderPrivacy: "The whole game won't be uploaded, only logs", supported: "Supported games",
             identifying: "Identifying your game… Nothing will be sent.", droppedContents: "the dropped items",
             detectedGame: "Detected game", multipleGames: "Multiple games were found. Drop the installation folder for just one game, or select logs manually.",
             gameNotFound: "No supported game was identified. Open local files from Steam and drag all contents, including the game executable, or choose files manually.",
@@ -77,9 +75,9 @@
             primaryFile: "Required", secondaryNote: "(Only upload if the author requests it)",
             missingRequired: "Please add the required logs first.", missingPrimary: "Please also add {names}.",
             chooseFiles: "Choose files", selectedFiles: "Selected files",
-            nicknameHeading: "Enter your nickname",
-            nicknamePlaceholder: "Nexus ID or usual nickname",
-            send: "Send to {author}", sent: "Saved",
+            nicknameHeading: "Nickname:",
+            nicknamePlaceholder: "e.g. Nexus ID",
+            send: "Send", sent: "Saved",
             fileTooLarge: "{name} is {size}, exceeding the {limit} per-file limit.",
             totalTooLarge: "Files total {size}, exceeding the {limit} total limit.",
             preparing: "Checking files…", uploading: "Uploading… {percent}%", saving: "Sending…",
@@ -96,7 +94,7 @@
             copy: "Copy folder", copied: "Copied", copyFailed: "Could not copy. Select the path and copy it manually.",
             scanning: "Checking {folder}… Nothing will be sent.", found: "Found your logs!",
             notFound: "No diagnostic files were found in {folder}. Check the locations in the manual guide.", folderOnly: "Drop the whole game folder, or select and drop all of its contents together.",
-            folderUnsupported: "This browser cannot read dropped folders. Use the Choose folder button instead.",
+            folderUnsupported: "This browser cannot read dropped folders. Use the Browse files button.",
             pickerUnsupported: "This browser cannot select folders. Choose files manually or update your browser.",
             cancelled: "Search cancelled. You can choose another folder.", scanError: "The folder could not be fully read. Check access permissions and try again, or choose files manually.",
             tooMany: "This folder contains too many items. Choose the specific game installation folder.", summary: "{count} files · {size}",
@@ -281,7 +279,7 @@
         const invalid = validationError();
         const button = $("send-files");
         button.textContent = state.sending ? text(state.progress === null ? "preparing" : state.progress === 100 ? "saving" : "uploading", { percent: state.progress || 0 })
-            : state.submitted ? text("sent") : text("send", { author: config.authorName });
+            : state.submitted ? text("sent") : text("send");
         // Require a nickname before sending; other validation errors can still explain how to fix the selection.
         button.disabled = !$("nickname").value.trim() || state.sending || state.scanning || state.submitted || invalid === "noFiles" || invalid === "tooLarge" || invalid === "demoOnly" || invalid === "missingRequired" || (state.route === "auto" && !state.recognizedGame);
         renderSizeErrors();
@@ -487,7 +485,7 @@
         $("supported-games").replaceChildren();
         for (const game of supported) {
             const item = make("li", "");
-            appendGameNames(item, game);
+            item.append(make("strong", "game-name-primary", local(game.name)));
             $("supported-games").append(item);
         }
         if (!supported.length) $("supported-games").append(make("li", "", text("noGames")));

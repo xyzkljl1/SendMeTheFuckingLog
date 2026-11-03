@@ -31,8 +31,7 @@
 
     <main>
         <section class="intro" aria-labelledby="page-title">
-            <h1 id="page-title" data-i18n="title">上传日志</h1>
-            <p class="intro-copy"><span data-i18n="recipientBefore">发送给</span> <strong id="author-name"></strong></p>
+            <h1 id="page-title"><span data-i18n="title">上传日志给</span> <strong id="author-name"></strong></h1>
             <aside class="supported-sidebar">
                 <details id="supported-games-panel">
                     <summary data-i18n="supported">支持的游戏</summary>
@@ -62,16 +61,16 @@
         <div class="workspace">
             <section id="auto-panel" aria-labelledby="auto-heading">
                 <div id="automatic-source">
-                    <div class="step-heading"><span class="step-number">1</span><div><h2 id="auto-heading" data-i18n="folderHeading">打开游戏本地文件</h2><p data-i18n="folderDescription">Steam 中右键游戏 → 管理 → 浏览本地文件。</p><p id="drag-instruction">全选文件，拖入右侧区域。</p></div></div>
+                    <div class="step-heading"><span class="step-number">1</span><div><h2 id="auto-heading" data-i18n="folderHeading">将整个游戏文件夹拖入</h2><p data-i18n="folderDescription">Steam 中右键游戏 → 管理 → 浏览本地文件。</p><p id="drag-instruction">全选文件，拖入右侧区域。</p></div></div>
                     <div class="guide-layout">
                         <div id="automatic-guide" class="guide-images" hidden></div>
                         <div class="guide-actions">
                             <div id="folder-drop" class="drop-zone">
                                 <span class="folder-icon" aria-hidden="true"></span>
                                 <h3 data-i18n="dropFolder">拖到这里</h3>
-                                <button type="button" class="primary-button" id="choose-folder" data-i18n="chooseFolder">选择游戏文件夹</button>
+                                <button type="button" class="primary-button" id="choose-folder" data-i18n="chooseFolder">浏览文件</button>
                                 <input id="folder-input" type="file" webkitdirectory hidden />
-                                <span class="drop-note" data-i18n="folderPrivacy">仅上传匹配的日志和配置</span>
+                                <span class="drop-note" data-i18n="folderPrivacy">不会上传整个游戏，只会上传日志</span>
                             </div>
                             <p id="folder-status" class="status" role="status" aria-live="polite"></p>
                             <p id="auto-size-error" class="status error" role="status" aria-live="polite" hidden></p>
@@ -119,14 +118,14 @@
 
             <div id="upload-next-steps">
                 <section class="identity-section" aria-labelledby="nickname-heading">
-                    <div class="step-heading"><span class="step-number" id="nickname-step-number">2</span><h2 id="nickname-heading"><label for="nickname" data-i18n="nicknameHeading">输入昵称</label></h2></div>
+                    <div class="step-heading"><span class="step-number" id="nickname-step-number">2</span><h2 id="nickname-heading"><label for="nickname" data-i18n="nicknameHeading">输入昵称：</label></h2></div>
                     <div id="nickname-target" class="attention-target nickname-target">
                         <span class="attention-arrow" aria-hidden="true">⬇</span>
-                        <input id="nickname" name="nickname" type="text" maxlength="60" autocomplete="off" spellcheck="false" required placeholder="Nexus ID 或常用昵称" />
+                        <input id="nickname" name="nickname" type="text" maxlength="60" autocomplete="off" spellcheck="false" required placeholder="例如N网Id" />
                     </div>
                 </section>
 
-                <div class="send-section"><div id="send-target" class="attention-target"><span class="attention-arrow" aria-hidden="true">⬇</span><button type="button" id="send-files" class="send-button" disabled>发送文件</button></div></div>
+                <div class="send-section"><div id="send-target" class="attention-target"><span class="attention-arrow" aria-hidden="true">⬇</span><button type="button" id="send-files" class="send-button" disabled>发送</button></div></div>
             </div>
             <progress id="upload-progress" max="100" value="0" hidden></progress>
             <p id="upload-status" class="status" role="status" aria-live="polite"></p>

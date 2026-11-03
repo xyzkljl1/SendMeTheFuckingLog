@@ -32,9 +32,11 @@ public sealed class UploadPresentationTests
         Assert.Equal(original.Width, wide.Width);
         Assert.True(sidebar.X >= wide.X + wide.Width);
         Assert.InRange(Math.Abs(wide.X + wide.Width / 2 - 900), 0, 1);
-        await Expect(page.Locator("#supported-games .game-name-secondary").First).ToBeHiddenAsync();
+        await Expect(page.Locator("#supported-games")).ToContainTextAsync("Phantom Blade Zero");
+        await Expect(page.Locator("#supported-games")).Not.ToContainTextAsync("影之刃零");
         await page.Locator("[data-language='zh']").ClickAsync();
-        await Expect(page.Locator("#supported-games .game-name-secondary").First).ToBeVisibleAsync();
+        await Expect(page.Locator("#supported-games")).ToContainTextAsync("影之刃零");
+        await Expect(page.Locator("#supported-games")).Not.ToContainTextAsync("Phantom Blade Zero");
 
         await page.SetViewportSizeAsync(390, 844);
         await Expect(page.Locator("#supported-games")).ToBeHiddenAsync();
@@ -51,7 +53,7 @@ public sealed class UploadPresentationTests
         await Expect(page.Locator("#optional-guide-steps")).ToBeHiddenAsync();
         await Expect(page.Locator("#guide-steps")).Not.ToContainTextAsync("UE4SS-settings.ini");
         await Expect(page.Locator("#manual-size-error")).ToBeHiddenAsync();
-        await Expect(page.GetByRole(AriaRole.Textbox, new() { Name = "Enter your nickname", Exact = true })).ToHaveCountAsync(1);
+        await Expect(page.GetByRole(AriaRole.Textbox, new() { Name = "Nickname:", Exact = true })).ToHaveCountAsync(1);
         await page.Locator("#optional-files summary").ClickAsync();
         await Expect(page.Locator("#optional-guide-steps")).ToContainTextAsync("UE4SS-settings.ini");
         await page.Locator("[data-language='zh']").ClickAsync();

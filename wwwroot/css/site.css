@@ -40,7 +40,10 @@ main{max-width:1160px;margin:0 auto;padding:18px 28px 36px}.intro{text-align:cen
 .detected-game-names .hint{margin:0}.detected-game-names strong{font-size:16px}.detected-game-names>span:last-child{font-size:14px;color:var(--muted)}
 @media(max-width:420px){.detected-game-cover{width:64px;height:96px}.detected-game-info{gap:12px}}
 
-.nickname-target{max-width:720px;display:flex;align-items:center;gap:12px}
+.identity-section{display:flex;align-items:center;gap:16px}
+.identity-section .step-heading{flex-shrink:0;align-items:center;margin-bottom:0}
+.identity-section h2{margin:0;white-space:nowrap}
+.nickname-target{flex:1;min-width:0;max-width:720px;display:flex;align-items:center;gap:12px}
 .nickname-input-label{flex-shrink:0;font-size:15px;font-weight:600;color:#203233}
 .nickname-target #nickname{flex:1;min-width:0}
 .identity-section #nickname{max-width:none;min-height:58px;border:2px solid #538c7e;background:#f0f8f4;box-shadow:0 0 0 4px #1775680d;font-size:16px;padding:15px 16px}
@@ -52,7 +55,7 @@ main{max-width:1160px;margin:0 auto;padding:18px 28px 36px}.intro{text-align:cen
 .attention-active #nickname,.attention-active #send-files{outline:3px solid #c76300;outline-offset:5px;box-shadow:0 0 0 9px #ffdf983d}
 @keyframes next-step-cue{0%,100%{opacity:.55;transform:translateY(-7px) scale(.96)}50%{opacity:1;transform:translateY(2px) scale(1.08)}}
 @media(prefers-reduced-motion:reduce){.attention-active>.attention-arrow{animation:none}}
-@media(max-width:600px){#send-target{align-self:stretch}.identity-section #nickname{font-size:16px}}
+@media(max-width:600px){#send-target{align-self:stretch}.identity-section{gap:8px}.identity-section .step-heading{gap:8px}.identity-section h2{font-size:14px}.identity-section #nickname{font-size:16px}}
 
 .status.recognition-success{display:flex;align-items:center;gap:12px;padding:16px 18px;border:2px solid #177568;border-radius:10px;background:#e8f6ee;color:#105c43;font-size:22px;font-weight:750;line-height:1.5}
 .status.recognition-success::before{content:"✓";display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border-radius:50%;background:#177568;color:#fff;font-size:22px}
