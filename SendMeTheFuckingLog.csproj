@@ -10,5 +10,8 @@
     <None Remove="Tests/**" />
     <Content Remove="GifGuideGenerator/**" />
     <None Remove="GifGuideGenerator/**" />
+    <Compile Remove=".private-config/**;.deployment-config/**;config/**" />
+    <Content Remove=".private-config/**;.deployment-config/**;config/**" />
+    <None Remove=".private-config/**;.deployment-config/**;config/**" />
   </ItemGroup>
 </Project>

@@ -2,12 +2,11 @@
 import sys
 import urllib.error
 import urllib.request
-from pathlib import Path
-from tls_manager import settings
+from configuration import prepared
 
 
 def load_tls_domain():
-    return settings(Path(__file__).with_name("tls.json").read_text(encoding="utf-8"))
+    return prepared()["Tls"]["Domain"]
 
 
 def main():

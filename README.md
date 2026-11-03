@@ -2,8 +2,6 @@
 
 给 Mod 作者使用的日志收集网站。用户按照图文指引选择游戏文件、填写昵称并发送，作者在自己的服务器上查看和下载日志。
 
-演示地址：[www.sendmethefuckinglog.top](https://www.sendmethefuckinglog.top/)
-
 ## AI 生成说明
 
 本项目的代码、文案和文档包含 OpenAI Codex 生成及修改的内容，功能需求由作者提出。
@@ -33,7 +31,7 @@
 
 [appsettings.json](appsettings.json) 设置作者名称、图片托管地址、后台白名单、容量和请求限额。本机运行和部署使用同一份设置。
 
-在 [deployment/tls.json](deployment/tls.json) 的 `Domain` 中填写网站域名，例如 `logs.example.com`，用于证书签发、续期和 HTTPS 访问检查。
+在 [appsettings.json](appsettings.json) 的 `Tls.Domain` 中填写网站域名，例如 `logs.example.com`，用于证书签发、续期和 HTTPS 访问检查。
 
 | 配置项 | 用途 |
 | --- | --- |
@@ -126,7 +124,7 @@
 
 - **HTTPS**：部署会使用临时 Certbot 容器签发证书，定时检查续期，并在证书更新后重启网站加载证书。公网 80 端口用于 HTTP-01 验证和 HTTPS 跳转，应保持开放；正常页面通过 443 访问。
 - **请求限额**：按全站最近 1、24、168 小时统计，任一窗口达到上限即返回 429；公开状态页仍可查看。正常重启保留计数，现有重新部署流程会重置请求计数。
-- **流量保护**：[deployment/traffic-limits.json](deployment/traffic-limits.json) 设置日、月上限，默认分别为 25 GB 和 900 GB。监控默认路由网卡的入站加出站流量，每分钟检查，按 UTC 自然日和自然月累计，GB 为十进制单位。
+- **流量保护**：[appsettings.json](appsettings.json) 的 `TrafficMonitor` 设置日、月上限，默认分别为 25 GB 和 900 GB。监控默认路由网卡的入站加出站流量，每分钟检查，按 UTC 自然日和自然月累计，GB 为十进制单位。
 - **达到流量上限**：监控随部署启用，检测到超额即关闭整台服务器。重启和重新部署均保留累计值，同一统计周期内开机可能再次触发关机。
 - **文件保留**：重新部署保留已有提交，达到容量限制时自动清理最旧提交。
 

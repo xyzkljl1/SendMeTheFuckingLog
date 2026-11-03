@@ -80,6 +80,7 @@ public sealed class TestApplication(TestWorld world, Dictionary<string, string?>
         {
             ["Tls:Enabled"] = "false",
             ["UploadPage:AuthorName"] = "Test author",
+            ["ImageHosting:BaseUrl"] = "https://assets.example.test",
             ["Storage:MaxStorageMiB"] = "1", ["Storage:MaxFileMiB"] = "0.125",
             ["Storage:MaxSubmissionMiB"] = "0.25",
             ["GlobalRateLimit:MaxRequestsPerHour"] = "100000",

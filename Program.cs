@@ -9,6 +9,7 @@ using SendMeTheFuckingLog.Hosting;
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+    InstanceConfiguration.Apply(builder.Configuration, builder.Environment);
     builder.Services.AddSingleton(new ApplicationPaths(AppContext.BaseDirectory));
     builder.Services.AddSingleton<ReverseProxyHeaders>();
     builder.Services.AddSingleton<HttpsTransport>();

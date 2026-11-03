@@ -19,6 +19,20 @@ public sealed class BrowserTests
             BaseURL = client.BaseAddress!.ToString(), Locale = locale,
             ViewportSize = new() { Width = width, Height = 900 }, AcceptDownloads = true
         });
+        // Exercise cross-origin asset URLs and real image decoding without a developer's CDN.
+        await context.RouteAsync("https://assets.example.test/**", async route =>
+        {
+            var assetRoot = Path.GetFullPath(Path.Combine(TestWorld.Project, "wwwroot", "images")) + Path.DirectorySeparatorChar;
+            var relative = Uri.UnescapeDataString(new Uri(route.Request.Url).AbsolutePath.TrimStart('/'));
+            var asset = Path.GetFullPath(Path.Combine(assetRoot, relative));
+            if (!asset.StartsWith(assetRoot, StringComparison.Ordinal) || !File.Exists(asset))
+            {
+                await route.FulfillAsync(new() { Status = 404 });
+                return;
+            }
+            new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider().TryGetContentType(asset, out var contentType);
+            await route.FulfillAsync(new() { Path = asset, ContentType = contentType ?? "application/octet-stream" });
+        });
         await context.Tracing.StartAsync(new() { Screenshots = true, Snapshots = true, Sources = true });
         var page = await context.NewPageAsync();
         var scriptErrors = new List<string>();
@@ -225,7 +239,7 @@ public sealed class BrowserTests
             foreach (var url in urls)
             {
                 Assert.StartsWith("https://", url);
-                // The real browser fetches and decodes the hosted asset; an HTML error page cannot pass.
+                // Decode the real asset bytes served through the controlled hosted origin.
                 var loaded = await page.EvaluateAsync<bool>("""
                     async url => {
                         for (let attempt = 0; attempt < 3; attempt++) {

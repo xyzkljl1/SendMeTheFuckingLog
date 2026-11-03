@@ -14,3 +14,6 @@ __pycache__/
 .ssh-*/
 .smoke/
 GifGuideGenerator/output/
+.private-config/
+.deployment-config/
+/config/instance.json

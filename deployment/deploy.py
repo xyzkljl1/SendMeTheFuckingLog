@@ -7,6 +7,7 @@ import shlex
 import subprocess
 import sys
 import tempfile
+from configuration import application_settings, prepared, tls_settings
 
 
 def main():
@@ -24,6 +25,7 @@ def main():
     if not port.isdecimal() or not 1 <= int(port) <= 65535:
         raise ValueError("Invalid SSH port.")
     root = Path(__file__).resolve().parent.parent
+    settings = prepared(root)
     payload = {
         "script": (root / "deployment" / "remote.py").read_text(encoding="utf-8"),
         "compose": (root / "compose.yaml").read_text(encoding="utf-8"),
@@ -31,11 +33,14 @@ def main():
         "revision": os.environ["GITHUB_SHA"], "run": os.environ["GITHUB_RUN_NUMBER"],
         "token": os.environ["GH_TOKEN"],
         "repository": os.environ["GITHUB_REPOSITORY"],
-        "traffic": {name: (root / "deployment" / name).read_text(encoding="utf-8") for name in (
-            "traffic_monitor.py", "traffic-limits.json", "send-me-the-log-traffic.service",
-            "send-me-the-log-traffic.timer")},
-        "tls": {name: (root / "deployment" / name).read_text(encoding="utf-8") for name in (
-            "tls_manager.py", "tls.json", "send-me-the-log-tls.service", "send-me-the-log-tls.timer")},
+        "application": application_settings(settings),
+        "traffic": {"traffic-limits.json": json.dumps(settings["TrafficMonitor"]),
+                    **{name: (root / "deployment" / name).read_text(encoding="utf-8") for name in (
+            "traffic_monitor.py", "send-me-the-log-traffic.service",
+            "send-me-the-log-traffic.timer")}},
+        "tls": {"tls.json": json.dumps(tls_settings(settings)),
+                **{name: (root / "deployment" / name).read_text(encoding="utf-8") for name in (
+            "tls_manager.py", "send-me-the-log-tls.service", "send-me-the-log-tls.timer")}},
     }
     bootstrap = "import json,sys; p=json.load(sys.stdin); exec(compile(p.pop('script'),'<deployment>','exec')); main(p)"
     # Temporary credentials are inside the checkout and removed even on failure.

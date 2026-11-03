@@ -61,6 +61,7 @@ jobs:
       DEPLOY_USER: ${{ vars.DEPLOY_USER }}
       DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
       DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      CONFIG_REPOSITORY: ${{ vars.CONFIG_REPOSITORY }}
     defaults:
       run:
         shell: bash
@@ -70,20 +71,38 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Resolve repository identity and validate HTTPS settings
+      - name: Select optional configuration repository
+        id: configuration
+        env:
+          CONFIG_READ_KEY_PRESENT: ${{ secrets.CONFIG_READ_KEY != '' }}
+        run: python3 -B deployment/configuration.py source
+
+      - name: Read private instance configuration
+        if: steps.configuration.outputs.repository != ''
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ${{ steps.configuration.outputs.repository }}
+          ssh-key: ${{ secrets.CONFIG_READ_KEY }}
+          persist-credentials: false
+          path: .private-config
+
+      - name: Merge and validate instance configuration
+        env:
+          CONFIG_VARIABLES_JSON: ${{ toJSON(vars) }}
+        run: python3 -B deployment/configuration.py prepare
+
+      - name: Resolve repository identity
         run: |
           owner="${GITHUB_REPOSITORY%%/*}"
           printf 'IMAGE=ghcr.io/%s\n' "${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
           printf 'SOURCE_URL=https://github.com/%s\n' "$GITHUB_REPOSITORY" >> "$GITHUB_ENV"
           printf 'REPOSITORY_OWNER=%s\n' "${owner,,}" >> "$GITHUB_ENV"
-          domain=$(python3 -B -c 'from pathlib import Path; from deployment.tls_manager import settings; print(settings(Path("deployment/tls.json").read_text(encoding="utf-8")))')
-          printf 'TLS_DOMAIN=%s\n' "$domain" >> "$GITHUB_ENV"
 
       - name: Check configuration
         run: |
           for name in DEPLOY_HOST DEPLOY_USER DEPLOY_PORT; do
             if [[ -z "${!name}" ]]; then
-              echo "::error::Missing repository variable: $name"
+              echo "::error::Missing deployment connection setting: $name"
               exit 1
             fi
           done
@@ -116,6 +135,9 @@ jobs:
           docker run --detach --name send-me-the-log-smoke --init \
             --memory 128m --memory-swap 128m --pids-limit 128 \
             --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --env Tls__Enabled=false --env ReverseProxy__Enabled=false \
+            --env Tls__HttpPort=8080 --env Tls__HttpsPort=8443 \
+            --env ASPNETCORE_URLS=http://+:8080 \
             --publish 127.0.0.1::8080 \
             --mount "type=bind,src=$PWD/.smoke/data,dst=/app/data" \
             --mount "type=bind,src=$PWD/.smoke/tmp,dst=/app/tmp" "$IMAGE_TAG"
@@ -182,7 +204,7 @@ jobs:
           import os, shutil
           from pathlib import Path
           root = Path(os.environ['GITHUB_WORKSPACE']).resolve()
-          for name in ['.docker-ci', *[p.name for p in root.glob('.ssh-*')]]:
+          for name in ['.docker-ci', '.private-config', '.deployment-config', *[p.name for p in root.glob('.ssh-*')]]:
               path = root / name
               if path.is_symlink() or not path.resolve().is_relative_to(root):
                   raise RuntimeError('Refusing unsafe credential cleanup path')

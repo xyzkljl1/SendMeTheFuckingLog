@@ -17,10 +17,20 @@ services:
     environment:
       Tls__Enabled: "true"
       Tls__Domain: ${TLS_DOMAIN:?TLS_DOMAIN is required}
+      Tls__HttpPort: ${APP_HTTP_PORT:-8080}
+      Tls__HttpsPort: ${APP_HTTPS_PORT:-8443}
+      ReverseProxy__Enabled: "false"
+      ASPNETCORE_URLS: http://+:${APP_HTTP_PORT:-8080}
     ports:
-      - "0.0.0.0:80:8080"
-      - "0.0.0.0:443:8443"
+      - "0.0.0.0:80:${APP_HTTP_PORT:-8080}"
+      - "0.0.0.0:443:${APP_HTTPS_PORT:-8443}"
     volumes:
+      - type: bind
+        source: /opt/send-me-the-log/app/config
+        target: /app/config
+        read_only: true
+        bind:
+          create_host_path: false
       - type: bind
         source: /opt/send-me-the-log/traffic-monitor/status
         target: /app/monitor-status

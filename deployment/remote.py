@@ -47,6 +47,25 @@ def validate_payload(payload):
         raise ValueError("Invalid source revision.")
     if not re.fullmatch(r"[A-Za-z0-9_-]+", payload["actor"]):
         raise ValueError("Invalid registry actor.")
+    if not isinstance(payload.get("application"), dict):
+        raise ValueError("Application configuration is missing.")
+    ports = payload["application"].get("Tls", {})
+    if any(type(ports.get(name)) is not int or not 1 <= ports[name] <= 65535
+           for name in ("HttpPort", "HttpsPort")) or ports["HttpPort"] == ports["HttpsPort"]:
+        raise ValueError("Invalid application listening ports.")
+
+
+def install_application_configuration(settings):
+    directory = ROOT / "app" / "config"
+    plain(directory)
+    directory.mkdir(parents=True, mode=0o750, exist_ok=True)
+    require_root_owner(directory)
+    os.chown(directory, 0, 1000)
+    os.chmod(directory, 0o750)
+    target = directory / "instance.json"
+    atomic_write(target, json.dumps(settings, ensure_ascii=False, indent=2) + "\n")
+    os.chown(target, 0, 1000)
+    os.chmod(target, 0o640)
 
 
 def plain(path, system_unit=False):
@@ -212,12 +231,13 @@ def proxy_compose(compose, configuration):
     environment.update({"Tls__Enabled": "false", "ReverseProxy__Enabled": "true"})
     for index, address in enumerate(proxies):
         environment[f"ReverseProxy__KnownProxies__{index}"] = address
-    web["ports"] = [{"target": 8080, "published": "8080", "host_ip": "127.0.0.1", "protocol": "tcp"}]
+    port = int(environment["Tls__HttpPort"])
+    web["ports"] = [{"target": port, "published": str(port), "host_ip": "127.0.0.1", "protocol": "tcp"}]
     web["volumes"] = [volume for volume in web["volumes"] if volume["target"] not in ("/app/tls", "/app/acme")]
     # JSON is also a Compose YAML document; no additional YAML parser or override syntax is required.
     atomic_write(ROOT / "compose.yaml", json.dumps(model, indent=2) + "\n")
     run(*compose, "config", "--quiet")
-    print("PROXY: HTTP bound to 127.0.0.1:8080; trusted peers: " + ", ".join(proxies), flush=True)
+    print(f"PROXY: HTTP bound to 127.0.0.1:{port}; trusted peers: " + ", ".join(proxies), flush=True)
 
 
 def check_container(container, run_number):
@@ -321,7 +341,9 @@ def main(payload):
                     or not image_info["Config"].get("Healthcheck")):
                 raise RuntimeError("Pulled image does not match the expected application/revision/architecture.")
             atomic_write(ROOT / "compose.yaml", payload["compose"])
-            atomic_write(ROOT / "image.env", f"APP_IMAGE={payload['image']}\nDEPLOY_RUN={payload['run']}\nTLS_DOMAIN={domain}\nREPOSITORY_OWNER={OWNER}\n")
+            ports = payload["application"]["Tls"]
+            atomic_write(ROOT / "image.env", f"APP_IMAGE={payload['image']}\nDEPLOY_RUN={payload['run']}\nTLS_DOMAIN={domain}\nREPOSITORY_OWNER={OWNER}\n"
+                         f"APP_HTTP_PORT={ports['HttpPort']}\nAPP_HTTPS_PORT={ports['HttpsPort']}\n")
             compose = docker + ["compose", "--project-name", APP, "--project-directory", str(ROOT),
                                 "--env-file", str(ROOT / "image.env"), "-f", str(ROOT / "compose.yaml")]
             run(*compose, "config", "--quiet")
@@ -332,6 +354,7 @@ def main(payload):
             stopped = inspect_container()
             if stopped and stopped["State"]["Running"]:
                 raise RuntimeError("Old application is still running; request counters were not reset.")
+            install_application_configuration(payload["application"])
             reset_request_counts()
             # No automatic rollback; failed starts leave old images available for investigation.
             run(*compose, "up", "--detach", "--force-recreate", "--no-build", "--pull", "never",
