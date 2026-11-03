@@ -62,7 +62,7 @@ public sealed class RateLimitTests
         Assert.True(status.Headers.CacheControl!.NoStore);
         using var head = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, "/status"), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.TooManyRequests, head.StatusCode);
-        Assert.Empty(await head.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken));
+        // TestServer exposes the generated body; real HEAD body suppression is checked with Kestrel in HttpsTests.
     }
 
     [Fact]

@@ -97,7 +97,15 @@ public sealed class TestApplication(TestWorld world, Dictionary<string, string?>
         });
     }
 
-    public HttpClient Client() => CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+    public HttpClient Client()
+    {
+        // Start first: UseKestrel(0) resolves its real port into ClientOptions during startup.
+        StartServer();
+        return CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false, BaseAddress = ClientOptions.BaseAddress
+        });
+    }
     public Task RefreshAccess() => Services.GetRequiredService<AuthorAccess>().RefreshAsync(TestContext.Current.CancellationToken);
 
     private sealed class ClientAddressFilter(TestApplication app) : IStartupFilter

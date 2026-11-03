@@ -124,6 +124,9 @@ public sealed class HttpsTests
         using var status = await https.GetAsync("/sTaTus?lang=en", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.TooManyRequests, status.StatusCode);
         Assert.Contains("Website status", await status.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        using var head = await https.SendAsync(new HttpRequestMessage(HttpMethod.Head, "/status"), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.TooManyRequests, head.StatusCode);
+        Assert.Empty(await head.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken));
         using var http = Client(ports.Http);
         Assert.Equal("challenge", await http.GetStringAsync("/.well-known/acme-challenge/test-token", TestContext.Current.CancellationToken));
         Assert.Equal("OK", await http.GetStringAsync("/healthz", TestContext.Current.CancellationToken));
