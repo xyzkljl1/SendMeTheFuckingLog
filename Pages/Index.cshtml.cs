@@ -9,7 +9,6 @@ public sealed class IndexModel(GameCatalog catalog, IOptions<UploadPageOptions> 
     HostedImageUrls images) : PageModel
 {
     public string ImageOrigin => images.Origin;
-    public string WindowsKeyImage => images.Resolve("icons/windows-key.svg");
     public IEnumerable<string> PreloadedImages => catalog.Games.Select(game => game.Image)
         .OfType<string>().Where(url => !new Uri(url).AbsolutePath.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
         .Distinct(StringComparer.Ordinal).Take(2);

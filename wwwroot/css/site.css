@@ -114,7 +114,7 @@ summary:focus-visible{outline:3px solid #e5ae53;outline-offset:4px}
 .screenshot-help-button[aria-expanded=true] .screenshot-help-chevron{transform:translateY(2px) rotate(225deg)}
 .screenshot-layout:has(> .screenshot-help[hidden]){grid-template-columns:minmax(0,1fr)}
 .screenshot-help{min-width:0}.screenshot-help p{margin:0 0 14px;line-height:1.7}
-.windows-key{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;margin:0 3px;padding:2px 6px;border:1px solid #aabbb3;border-bottom-width:3px;border-radius:4px;background:#f6f8f7;color:#203233;font:inherit;white-space:nowrap}.windows-key img{display:block;width:18px;height:18px}
+.windows-key{display:inline-block;vertical-align:middle;margin:0 3px;padding:2px 6px;border:1px solid #aabbb3;border-bottom-width:3px;border-radius:4px;background:#f6f8f7;color:#203233;font:inherit;white-space:nowrap}
 .screenshot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;list-style:none;margin:18px 0 0;padding:0}
 .screenshot-card{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fafcfb}
 .screenshot-preview{display:grid;place-items:center;height:140px;background:#eef3f0;border-radius:6px;overflow:hidden}
