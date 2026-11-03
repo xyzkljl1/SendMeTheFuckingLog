@@ -31,7 +31,7 @@
 
     <main>
         <section class="intro" aria-labelledby="page-title">
-            <h1 id="page-title"><span data-i18n="title">上传日志给</span> <strong id="author-name"></strong></h1>
+            <h1 id="page-title"><span id="upload-title" data-i18n="title">上传日志给</span> <strong id="author-name"></strong></h1>
             <aside id="supported-games-sidebar" class="supported-sidebar" hidden>
                 <details id="supported-games-panel">
                     <summary data-i18n="supported">支持的游戏</summary>
@@ -53,6 +53,11 @@
                 <button type="button" class="route-card" id="route-manual" aria-pressed="false" aria-controls="manual-panel">
                     <span class="route-symbol" aria-hidden="true">↥</span>
                     <span class="route-text"><strong data-i18n="manualTitle">手动选择日志</strong></span>
+                    <span class="choice-dot" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="route-card" id="route-screenshots" aria-pressed="false" aria-controls="screenshots-panel">
+                    <span class="route-symbol" aria-hidden="true">▧</span>
+                    <span class="route-text"><strong data-i18n="screenshotsTitle">上传截图</strong></span>
                     <span class="choice-dot" aria-hidden="true"></span>
                 </button>
             </div>
@@ -114,6 +119,19 @@
                         <div id="manual-selection-slot" class="selection-slot"></div>
                     </div>
                 </div>
+            </section>
+
+            <section id="screenshots-panel" aria-labelledby="screenshots-heading" hidden>
+                <div class="step-heading"><span class="step-number">1</span><h2 id="screenshots-heading" data-i18n="screenshotsHeading">添加截图</h2></div>
+                <div id="screenshots-drop" class="drop-zone">
+                    <h3 data-i18n="dropScreenshots">拖入截图，或按 Ctrl+V 粘贴</h3>
+                    <button type="button" class="primary-button" id="choose-screenshots" data-i18n="chooseScreenshots">选择截图</button>
+                    <input id="screenshots-input" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" multiple hidden />
+                </div>
+                <p id="screenshots-status" class="status" role="status" aria-live="polite"></p>
+                <p id="screenshots-size-error" class="status error" role="status" aria-live="polite" hidden></p>
+                <p id="screenshots-summary" class="hint"></p>
+                <ul id="screenshot-files" class="screenshot-grid"></ul>
             </section>
 
             <div id="upload-next-steps">

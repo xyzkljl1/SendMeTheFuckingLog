@@ -28,9 +28,9 @@ public sealed class UploadFailure(string code, int statusCode = 400) : Exception
     public int StatusCode { get; } = statusCode;
 }
 
-public sealed record UploadDescription(string GameId, string Nickname, UploadFileDescription[] Files, string SelectionMode = "auto");
+public sealed record UploadDescription(string? GameId, string Nickname, UploadFileDescription[] Files, string SelectionMode = "auto");
 public sealed record UploadFileDescription(string ItemId, string FileName, long Size, string Sha256);
 public sealed record StoredFile(string ItemId, string OriginalName, string StoredName, long Size, string Sha256);
-public sealed record SubmissionInfo(int FormatVersion, string SubmissionId, string GameId,
-    string Nickname, DateTimeOffset ReceivedAt, StoredFile[] Files);
+public sealed record SubmissionInfo(int FormatVersion, string SubmissionId, string? GameId,
+    string Nickname, DateTimeOffset ReceivedAt, StoredFile[] Files, string Kind = "logs");
 public sealed record UploadReceipt(bool Saved, string SubmissionId, int FileCount);

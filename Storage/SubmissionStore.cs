@@ -12,7 +12,7 @@ namespace SendMeTheFuckingLog.Storage;
 public sealed partial class SubmissionStore : IDisposable
 {
     private const int MetadataLimit = 32 * 1024;
-    private const int MaxFiles = 32;
+    public const int MaxFiles = 32;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
     private static readonly Regex DirectoryName = new(
         @"^\d{4}-\d{2}-\d{2}_\d{6}_[a-z0-9]+(?:-[a-z0-9]+)*_[a-f0-9]{16}(?:\.uploading)?$",
@@ -115,14 +115,18 @@ public sealed partial class SubmissionStore : IDisposable
                 await ReadMetadataAsync(first.Body, cancellationToken), JsonOptions)
                 ?? throw new UploadFailure("invalidSubmission");
             var game = Validate(description);
+            var screenshots = description.SelectionMode == "screenshots";
             var receivedAt = DateTimeOffset.UtcNow;
-            var id = $"{receivedAt.ToOffset(TimeSpan.FromHours(8)).ToString("yyyy-MM-dd_HHmmss", CultureInfo.InvariantCulture)}_{game.Id}_{Guid.NewGuid():N}";
+            var id = $"{receivedAt.ToOffset(TimeSpan.FromHours(8)).ToString("yyyy-MM-dd_HHmmss", CultureInfo.InvariantCulture)}_{game?.Id ?? "screenshots"}_{Guid.NewGuid():N}";
             id = id[..^16]; // Keep a random 64-bit suffix; collisions are also checked below.
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "submission.json", ".writer.lock" };
-            var files = description.Files.Select(file => new StoredFile(file.ItemId, file.FileName,
-                UniqueName(file.FileName, names), file.Size, file.Sha256.ToLowerInvariant())).ToArray();
-            var information = new SubmissionInfo(1, id, game.Id, description.Nickname.Trim(), receivedAt, files);
+            var files = description.Files.Select((file, index) => new StoredFile(file.ItemId, file.FileName,
+                screenshots ? $"screenshot-{index + 1:D2}{Path.GetExtension(file.FileName).ToLowerInvariant()}" : UniqueName(file.FileName, names),
+                file.Size, file.Sha256.ToLowerInvariant())).ToArray();
+            var information = new SubmissionInfo(1, id, game?.Id, description.Nickname.Trim(), receivedAt, files,
+                screenshots ? "screenshots" : "logs");
             var metadata = JsonSerializer.SerializeToUtf8Bytes(information, JsonOptions);
+            if (metadata.Length > MetadataLimit) throw new UploadFailure("invalidSubmission");
             reservedBytes = checked(description.Files.Sum(file => file.Size) + metadata.Length);
             if (reservedBytes > limits.StorageBytes) throw new UploadFailure("storageFull", 507);
 
@@ -154,7 +158,7 @@ public sealed partial class SubmissionStore : IDisposable
                 var disposition = GetDisposition(section);
                 if (disposition.Name != $"file{index}" || disposition.FileName != files[index].OriginalName)
                     throw new UploadFailure("invalidSubmission");
-                await WriteFileAsync(section.Body, Path.Combine(temporaryPath, files[index].StoredName), files[index], cancellationToken);
+                await WriteFileAsync(section.Body, Path.Combine(temporaryPath, files[index].StoredName), files[index], screenshots, cancellationToken);
             }
             if (await reader.ReadNextSectionAsync(cancellationToken) is not null) throw new UploadFailure("invalidSubmission");
             cancellationToken.ThrowIfCancellationRequested();
@@ -193,11 +197,13 @@ public sealed partial class SubmissionStore : IDisposable
         }
     }
 
-    private SupportedGame Validate(UploadDescription description)
+    private SupportedGame? Validate(UploadDescription description)
     {
-        var game = catalog.Games.FirstOrDefault(game => game.Id == description.GameId && !game.IsDemo)
-            ?? throw new UploadFailure("unsupportedGame");
-        if (description.SelectionMode is not ("auto" or "manual")) throw new UploadFailure("invalidSubmission");
+        if (description.SelectionMode is not ("auto" or "manual" or "screenshots")) throw new UploadFailure("invalidSubmission");
+        var screenshots = description.SelectionMode == "screenshots";
+        if (screenshots && !string.IsNullOrEmpty(description.GameId)) throw new UploadFailure("invalidSubmission");
+        var game = screenshots ? null : (catalog.Games.FirstOrDefault(game => game.Id == description.GameId && !game.IsDemo)
+            ?? throw new UploadFailure("unsupportedGame"));
         if (string.IsNullOrWhiteSpace(description.Nickname) || description.Nickname.Length > 60
             || description.Nickname.Any(char.IsControl)) throw new UploadFailure("invalidNickname");
         if (description.Files is not { Length: > 0 and <= MaxFiles }) throw new UploadFailure("invalidSubmission");
@@ -205,19 +211,27 @@ public sealed partial class SubmissionStore : IDisposable
         long total = 0;
         foreach (var file in description.Files)
         {
-            if (file is null || string.IsNullOrEmpty(file.FileName) || file.FileName.Length > 120
-                || file.FileName.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not ('.' or '-' or '_'))
-                || !char.IsAsciiLetterOrDigit(file.FileName[0]) || !items.Add(file.ItemId)
+            if (file is null || !PlainFileName(file.FileName) || file.FileName.Length > 120
+                || string.IsNullOrEmpty(file.ItemId) || file.ItemId.Length > 60 || !items.Add(file.ItemId)
                 || file.Sha256 is null || !Regex.IsMatch(file.Sha256, "^[a-fA-F0-9]{64}$", RegexOptions.CultureInvariant))
                 throw new UploadFailure("invalidSubmission");
-            var item = game.Files.FirstOrDefault(item => item.Id == file.ItemId);
-            if (item is null || !item.Paths.Any(path => string.Equals(path.Split('/')[^1], file.FileName, StringComparison.OrdinalIgnoreCase)))
-                throw new UploadFailure("invalidFile");
+            if (screenshots)
+            {
+                if (ScreenshotFormat.ContentType(file.FileName) is null) throw new UploadFailure("invalidImage");
+            }
+            else
+            {
+                if (file.FileName.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not ('.' or '-' or '_'))
+                    || !char.IsAsciiLetterOrDigit(file.FileName[0])) throw new UploadFailure("invalidSubmission");
+                var item = game!.Files.FirstOrDefault(item => item.Id == file.ItemId);
+                if (item is null || !item.Paths.Any(path => string.Equals(path.Split('/')[^1], file.FileName, StringComparison.OrdinalIgnoreCase)))
+                    throw new UploadFailure("invalidFile");
+            }
             if (file.Size < 0) throw new UploadFailure("invalidSubmission");
             if (file.Size > limits.FileBytes || file.Size > limits.SubmissionBytes - total) throw new UploadFailure("tooLarge", 413);
             total += file.Size;
         }
-        if (description.SelectionMode == "manual" && game.Files.Any(file => file.IsPrimary && !items.Contains(file.Id)))
+        if (description.SelectionMode == "manual" && game!.Files.Any(file => file.IsPrimary && !items.Contains(file.Id)))
             throw new UploadFailure("missingRequired");
         return game;
     }
@@ -255,11 +269,13 @@ public sealed partial class SubmissionStore : IDisposable
     private static FileStream NewFile(string path) => new(path, FileMode.CreateNew, FileAccess.Write,
         FileShare.None, 64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
 
-    private static async Task WriteFileAsync(Stream input, string path, StoredFile expected, CancellationToken token)
+    private static async Task WriteFileAsync(Stream input, string path, StoredFile expected, bool screenshot, CancellationToken token)
     {
         await using var output = NewFile(path);
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         var buffer = ArrayPool<byte>.Shared.Rent(64 * 1024);
+        var prefix = screenshot ? new byte[ScreenshotFormat.HeaderLength] : [];
+        var prefixLength = 0;
         try
         {
             long received = 0;
@@ -267,12 +283,17 @@ public sealed partial class SubmissionStore : IDisposable
             while ((length = await input.ReadAsync(buffer.AsMemory(0, 64 * 1024), token)) != 0)
             {
                 if (length > expected.Size - received) throw new UploadFailure("incompleteUpload");
+                var capture = Math.Min(length, prefix.Length - prefixLength);
+                buffer.AsSpan(0, capture).CopyTo(prefix.AsSpan(prefixLength));
+                prefixLength += capture;
                 hash.AppendData(buffer, 0, length);
                 await output.WriteAsync(buffer.AsMemory(0, length), token);
                 received += length;
             }
             if (received != expected.Size || !Convert.ToHexString(hash.GetHashAndReset()).Equals(expected.Sha256, StringComparison.OrdinalIgnoreCase))
                 throw new UploadFailure("incompleteUpload");
+            if (screenshot && !ScreenshotFormat.Matches(expected.OriginalName, prefix.AsSpan(0, prefixLength), received))
+                throw new UploadFailure("invalidImage");
             DiskPersistence.FlushFile(output);
         }
         finally { ArrayPool<byte>.Shared.Return(buffer); }

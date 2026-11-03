@@ -16,6 +16,10 @@
         <nav><a href="@Model.Link(Model.Number)">← @Model.T("返回文件列表", "Back to files")</a><a class="button" href="@Model.FileLink("Download", Model.Submission!, Model.FileName)">@Model.T("下载文件", "Download file")</a></nav>
         <section class="card">
             <h2>@Model.FileName</h2><p class="muted">@Model.Submission</p>
+            @if (Model.IsImage)
+            {
+                <a href="@Model.FileLink("Image", Model.Submission!, Model.FileName)"><img class="image-preview" src="@Model.FileLink("Image", Model.Submission!, Model.FileName)" alt="@Model.FileName" /></a>
+            }
             @if (Model.Truncated) { <p class="notice">@Model.T("仅预览前 64K 字符，下载可查看完整内容。", "Showing the first 64K characters. Download the file to see everything.")</p> }
             @if (Model.Preview is not null) { <pre>@Model.Preview</pre> }
             @if (Model.Error is not null) { <p class="notice">@Model.Error</p> }
@@ -27,8 +31,20 @@
         @foreach (var submission in listing.Submissions)
         {
             <section class="card">
-                <div class="title-row"><h2>@(submission.Nickname ?? Model.T("未知昵称", "Unknown nickname"))</h2><span class="game">@Model.GameName(submission.GameId)</span></div>
+                <div class="title-row"><h2>@(submission.Nickname ?? Model.T("未知昵称", "Unknown nickname"))</h2><span class="game">@(submission.Kind == "screenshots" ? Model.T("截图", "Screenshots") : Model.GameName(submission.GameId))</span></div>
                 <p class="muted">@submission.Id</p>
+                @if (submission.Kind == "screenshots")
+                {
+                    <details class="screenshot-previews">
+                        <summary>@Model.T("查看截图", "View screenshots")</summary>
+                        <div class="screenshot-gallery">
+                            @foreach (var file in submission.Files.Where(file => SendMeTheFuckingLog.Storage.ScreenshotFormat.ContentType(file.Name) is not null))
+                            {
+                                <a href="@Model.FileLink("View", submission.Id, file.Name)"><img src="@Model.FileLink("Image", submission.Id, file.Name)" alt="@file.Name" loading="lazy" decoding="async" /><span>@file.Name</span></a>
+                            }
+                        </div>
+                    </details>
+                }
                 <div class="table-wrap"><table><thead><tr><th>@Model.T("文件", "File")</th><th>@Model.T("大小", "Size")</th><th>@Model.T("操作", "Actions")</th></tr></thead><tbody>
                 @foreach (var file in submission.Files)
                 {

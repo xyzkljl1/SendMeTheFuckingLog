@@ -18,7 +18,8 @@ public sealed class IndexModel(GameCatalog catalog, IOptions<UploadPageOptions> 
         recognition = catalog.Recognition,
         automaticGuideImages = catalog.AutomaticGuideImages,
         preloadedImages = PreloadedImages,
-        maxFileBytes = limits.FileBytes, maxSubmissionBytes = limits.SubmissionBytes
+        maxFileBytes = limits.FileBytes, maxSubmissionBytes = limits.SubmissionBytes,
+        maxScreenshotFiles = SubmissionStore.MaxFiles
     };
     public void OnGet() { }
 }

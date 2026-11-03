@@ -2,6 +2,7 @@
     "use strict";
     const config = JSON.parse(document.getElementById("page-configuration").textContent);
     const games = config.games;
+    const routes = ["auto", "manual", "screenshots"];
     const preloadedImages = new Set(config.preloadedImages || []);
     const rules = globalThis.diagnosticRules;
     const recognizer = rules.createRecognizer(games, config.recognition);
@@ -9,6 +10,11 @@
     const messages = {
         zh: {
             title: "上传日志给",
+            screenshotsTitle: "上传截图", screenshotsPageTitle: "上传截图给", screenshotsHeading: "添加截图",
+            dropScreenshots: "拖入截图，或按 Ctrl+V 粘贴", chooseScreenshots: "选择截图", removeScreenshot: "删除截图",
+            invalidImage: "图片格式无效，请选择 PNG、JPG 或 WebP 图片。",
+            invalidImageName: "图片文件名过长或含特殊字符，请重命名后添加。",
+            tooManyScreenshots: "每次最多添加 {count} 张截图。", imagePreviewFailed: "图片无法预览，请删除后重新选择。",
             guideImageOpen: "点击放大", guideImageUnavailable: "演示图片暂时无法加载，请按文字指引操作。",
             automaticGuideAlt: "操作示例：从 Steam 打开游戏目录，鼠标框选全部内容（也可按 Ctrl+A），再拖入上传区域。",
             chooseRoute: "选择方式", autoTitle: "自动选择日志", manualTitle: "手动选择日志",
@@ -57,6 +63,11 @@
         },
         en: {
             title: "Upload logs to",
+            screenshotsTitle: "Upload screenshots", screenshotsPageTitle: "Upload screenshots to", screenshotsHeading: "Add screenshots",
+            dropScreenshots: "Drop screenshots here, or paste with Ctrl+V", chooseScreenshots: "Choose screenshots", removeScreenshot: "Remove screenshot",
+            invalidImage: "Invalid image format. Choose PNG, JPG or WebP images.",
+            invalidImageName: "The image filename is too long or contains special characters. Rename it and try again.",
+            tooManyScreenshots: "Add up to {count} screenshots per upload.", imagePreviewFailed: "Cannot preview this image. Remove it and choose again.",
             guideImageOpen: "View full size", guideImageUnavailable: "The guide image could not load. Please follow the written steps.",
             automaticGuideAlt: "Example: open your game's folder from Steam, drag a selection box around all items (or press Ctrl+A), then drag them into the upload area.",
             chooseRoute: "Choose a method", autoTitle: "Select logs automatically", manualTitle: "Select logs manually",
@@ -134,9 +145,10 @@
     $("nickname").value = savedNickname.length <= 60 && !/[\u0000-\u001f\u007f-\u009f]/.test(savedNickname) ? savedNickname : "";
     const state = {
         language: initialLanguage(),
-        route: readPreference("route") === "manual" ? "manual" : "auto",
+        route: routes.includes(readPreference("route")) ? readPreference("route") : "auto",
         manualGame: games.some(game => game.id === savedGame) ? savedGame : "",
         autoFiles: [], manualFiles: [], autoStatus: null, manualStatus: null,
+        screenshotsFiles: [], screenshotsStatus: null, nextScreenshot: 1,
         scanning: false, scanToken: 0, autoHelp: false,
         recognizedGame: null,
         sending: false, submitted: false, uploadStatus: null, receipt: null, receiptNickname: "", progress: null
@@ -145,7 +157,8 @@
     const text = (key, args = {}) => (messages[state.language][key] || key).replace(/\{(\w+)\}/g, (_, name) => args[name] ?? "");
     const sizeText = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
     const make = (tag, className, value) => { const element = document.createElement(tag); element.className = className; if (value !== undefined) element.textContent = value; return element; };
-    const currentFiles = () => state.route === "auto" ? state.autoFiles : state.manualFiles;
+    const currentFiles = () => state[state.route + "Files"];
+    const routeStatus = route => $(route === "auto" ? "folder-status" : route + "-status");
     function updateGameNames(container, game) {
         const primary = container.querySelector(".game-name-primary");
         const secondary = container.querySelector(".game-name-secondary");
@@ -250,7 +263,7 @@
         return errors;
     }
     function renderSizeErrors() {
-        for (const route of ["auto", "manual"]) {
+        for (const route of routes) {
             const errors = sizeErrors(state[route + "Files"]);
             if (route === state.route && state.uploadStatus?.key === "tooLarge" && !errors.length)
                 errors.push(text("tooLarge", { file: sizeText(config.maxFileBytes), total: sizeText(config.maxSubmissionBytes) }));
@@ -258,7 +271,7 @@
             element.textContent = errors.join("\n");
             element.hidden = !errors.length;
             // A success message must not compete with an actionable size error.
-            $(route === "auto" ? "folder-status" : "manual-status").hidden = errors.length > 0 && !state[route + "Status"]?.error;
+            routeStatus(route).hidden = errors.length > 0 && !state[route + "Status"]?.error;
         }
     }
     function validationError() {
@@ -270,7 +283,7 @@
             if (game?.files.some(item => item.isPrimary && !files.some(record => record.item.id === item.id))) return "missingRequired";
         }
         if (!files.length) return "noFiles";
-        if (new Set(files.map(record => record.game.id)).size !== 1) return "oneGame";
+        if (state.route !== "screenshots" && new Set(files.map(record => record.game.id)).size !== 1) return "oneGame";
         if (sizeErrors(files).length) return "tooLarge";
         if (!nickname || nickname.length > 60 || /[\u0000-\u001f\u007f-\u009f]/.test(nickname)) return "invalidNickname";
         return null;
@@ -297,6 +310,10 @@
         $("choose-folder").disabled = state.sending || state.scanning || !games.length;
         $("route-auto").disabled = state.sending;
         $("route-manual").disabled = state.sending;
+        $("route-screenshots").disabled = state.sending;
+        $("choose-screenshots").disabled = state.sending;
+        $("screenshots-input").disabled = state.sending;
+        $("screenshot-files").querySelectorAll("button").forEach(button => { button.disabled = state.sending; });
     }
     function resetUpload() {
         state.submitted = false; state.uploadStatus = null; state.receipt = null; state.receiptNickname = ""; state.progress = null;
@@ -309,9 +326,9 @@
         renderStatus();
     }
     function renderStatus() {
-        for (const route of ["auto", "manual"]) {
+        for (const route of routes) {
             const status = state[route + "Status"];
-            const element = $(route === "auto" ? "folder-status" : "manual-status");
+            const element = routeStatus(route);
             element.textContent = status && status.key !== "manualAdded" ? text(status.key, { ...status.args, folder: status.args.folder === "" ? text("droppedContents") : status.args.folder }) : "";
             element.classList.toggle("error", Boolean(status && status.error));
             element.classList.toggle("recognition-success", route === "auto" && status?.key === "found" && !status.error);
@@ -446,6 +463,10 @@
         renderFileGroups($("optional-file-paths"), secondary, shared);
     }
     function renderSelection() {
+        if (state.route === "screenshots") {
+            $("selection-section").hidden = true;
+            renderScreenshots(); renderUpload(); return;
+        }
         const files = currentFiles();
         const selection = $("selection-section");
         const slot = $(state.route === "auto" ? "auto-selection-slot" : "manual-selection-slot");
@@ -475,6 +496,7 @@
         document.querySelectorAll("[data-language]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.language === state.language)));
         $("status-link").href = "/status?lang=" + state.language;
         $("author-name").textContent = config.authorName;
+        $("upload-title").textContent = text(state.route === "screenshots" ? "screenshotsPageTitle" : "title");
         $("nickname").placeholder = text("nicknamePlaceholder");
         $("nickname-step-number").textContent = state.route === "manual" ? "3" : "2";
         renderDragInstruction();
@@ -493,7 +515,7 @@
             savePreference("game", value);
             renderGuide(); renderSelection(); renderStatus();
         });
-        for (const route of ["auto", "manual"]) {
+        for (const route of routes) {
             $("route-" + route).classList.toggle("selected", state.route === route);
             $("route-" + route).setAttribute("aria-pressed", String(state.route === route));
             $(route + "-panel").hidden = state.route !== route;
@@ -519,6 +541,7 @@
     }));
     $("route-auto").addEventListener("click", () => changeRoute("auto"));
     $("route-manual").addEventListener("click", () => changeRoute("manual"));
+    $("route-screenshots").addEventListener("click", () => changeRoute("screenshots"));
     $("switch-manual").addEventListener("click", () => {
         const supported = games.filter(game => !game.isDemo);
         if (!state.manualGame && supported.length === 1) state.manualGame = supported[0].id;
@@ -550,6 +573,65 @@
         if (count > 0 && !wasReady && !sizeErrors(state.manualFiles).length && validationError() !== "missingRequired") showNextStepHints();
     }
     $("file-input").addEventListener("change", event => { addManualFiles(Array.from(event.target.files)); event.target.value = ""; });
+
+    function renderScreenshots() {
+        const list = $("screenshot-files");
+        const ids = new Set(state.screenshotsFiles.map(record => record.item.id));
+        for (const row of Array.from(list.children)) if (!ids.has(row.dataset.id)) row.remove();
+        for (const record of state.screenshotsFiles) {
+            let row = Array.from(list.children).find(row => row.dataset.id === record.item.id);
+            if (!row) {
+                row = make("li", "screenshot-card"); row.dataset.id = record.item.id;
+                const link = make("a", "screenshot-preview");
+                link.href = record.url; link.target = "_blank"; link.rel = "noopener";
+                const image = make("img", ""); image.alt = record.file.name; image.src = record.url;
+                image.loading = "lazy"; image.decoding = "async";
+                image.addEventListener("error", () => { image.hidden = true; row.classList.add("preview-failed"); });
+                link.append(image);
+                const failed = make("span", "preview-error");
+                const remove = make("button", "screenshot-remove"); remove.type = "button";
+                remove.addEventListener("click", () => {
+                    if (state.sending) return;
+                    URL.revokeObjectURL(record.url);
+                    state.screenshotsFiles = state.screenshotsFiles.filter(item => item !== record);
+                    state.screenshotsStatus = null;
+                    clearAttention(); resetUpload(); renderSelection(); renderStatus();
+                });
+                row.append(link, failed, make("strong", "screenshot-name", record.file.name), make("span", "hint", sizeText(record.file.size)), remove);
+                list.append(row);
+            }
+            row.querySelector("button").textContent = text("removeScreenshot");
+            row.querySelector("button").setAttribute("aria-label", text("removeScreenshot") + ": " + record.file.name);
+            row.querySelector(".preview-error").textContent = text("imagePreviewFailed");
+        }
+        $("screenshots-summary").textContent = state.screenshotsFiles.length ? text("summary", {
+            count: state.screenshotsFiles.length, size: sizeText(state.screenshotsFiles.reduce((total, record) => total + record.file.size, 0))
+        }) : "";
+    }
+    function addScreenshots(files) {
+        if (state.sending || state.route !== "screenshots" || !files.length) return;
+        resetUpload();
+        const wasEmpty = !state.screenshotsFiles.length;
+        const errors = new Set();
+        for (const file of files) {
+            if (!/\.(png|jpe?g|webp)$/i.test(file.name)) { errors.add("invalidImage"); continue; }
+            if (file.name.length > 120 || /[\\/:*?"<>|\u0000-\u001f\u007f-\u009f]/.test(file.name)) { errors.add("invalidImageName"); continue; }
+            if (state.screenshotsFiles.length >= config.maxScreenshotFiles) { errors.add("tooManyScreenshots"); continue; }
+            state.screenshotsFiles.push({ item: { id: "screenshot-" + state.nextScreenshot++ }, file, url: URL.createObjectURL(file) });
+        }
+        state.screenshotsStatus = errors.size ? { key: [...errors][0], args: { count: config.maxScreenshotFiles }, error: true } : null;
+        renderSelection(); renderStatus();
+        if (wasEmpty && state.screenshotsFiles.length && !sizeErrors(state.screenshotsFiles).length) showNextStepHints();
+    }
+    $("choose-screenshots").addEventListener("click", () => $("screenshots-input").click());
+    $("screenshots-input").addEventListener("change", event => { addScreenshots(Array.from(event.target.files)); event.target.value = ""; });
+    document.addEventListener("paste", event => {
+        if (state.route !== "screenshots" || state.sending) return;
+        const files = Array.from(event.clipboardData?.files || []);
+        if (!files.length) return;
+        event.preventDefault();
+        addScreenshots(files);
+    });
     function clearAutomatic() {
         clearAttention();
         state.scanToken++;
@@ -636,6 +718,15 @@
         if (entries.some(entry => entry && entry.isDirectory)) { setStatus("manual", "filesOnly", {}, true); return; }
         addManualFiles(Array.from(transfer.files));
     });
+    installDropZone("screenshots-drop", transfer => {
+        if (state.sending) return;
+        const directory = Array.from(transfer.items).some(item => {
+            const getter = item.getAsEntry || item.webkitGetAsEntry;
+            return getter?.call(item)?.isDirectory;
+        });
+        if (directory) { setStatus("screenshots", "filesOnly", {}, true); return; }
+        addScreenshots(Array.from(transfer.files));
+    });
     // Prevent accidental navigation if files are dropped outside the designated zones.
     document.addEventListener("dragover", event => event.preventDefault());
     document.addEventListener("drop", event => event.preventDefault());
@@ -663,7 +754,7 @@
                 files.push({ itemId: record.item.id, fileName: record.file.name, size: record.file.size, sha256 });
             }
             const form = new FormData();
-            form.append("metadata", JSON.stringify({ gameId: records[0].game.id, nickname, files, selectionMode: state.route }));
+            form.append("metadata", JSON.stringify({ gameId: state.route === "screenshots" ? null : records[0].game.id, nickname, files, selectionMode: state.route }));
             records.forEach((record, index) => form.append("file" + index, record.file, record.file.name));
             await new Promise(resolve => {
                 const xhr = new XMLHttpRequest();
@@ -682,9 +773,12 @@
                         state.submitted = true; state.receipt = response.submissionId; state.receiptNickname = nickname;
                         uploadStatus("success", { count: response.fileCount });
                     } else {
-                        const knownErrors = ["tooLarge", "busy", "siteBusy", "storageFull", "storageFailed", "invalidSubmission", "invalidFile", "unsupportedGame", "incompleteUpload", "refreshPage", "invalidNickname", "missingRequired", "unknownResult"];
+                        const knownErrors = ["tooLarge", "busy", "siteBusy", "storageFull", "storageFailed", "invalidSubmission", "invalidFile", "invalidImage", "unsupportedGame", "incompleteUpload", "refreshPage", "invalidNickname", "missingRequired", "unknownResult"];
                         const key = knownErrors.includes(response.error) ? response.error : xhr.status === 413 ? "tooLarge" : "unknownResult";
-                        uploadStatus(key, {}, true);
+                        if (state.route === "screenshots" && key === "invalidImage") {
+                            state.uploadStatus = null;
+                            setStatus("screenshots", key, {}, true);
+                        } else uploadStatus(key, {}, true);
                     }
                     resolve();
                 };

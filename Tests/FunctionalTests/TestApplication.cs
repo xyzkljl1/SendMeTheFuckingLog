@@ -159,7 +159,7 @@ public static class Upload
     }
 
     public static async Task<HttpResponseMessage> Send(HttpClient client, TestFile[] files,
-        string mode = "manual", string nickname = "Test player", string game = "phantom-blade-zero",
+        string mode = "manual", string nickname = "Test player", string? game = "phantom-blade-zero",
         bool wrongHash = false, bool truncate = false, string? token = null)
     {
         token ??= await Token(client);

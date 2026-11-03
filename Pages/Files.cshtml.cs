@@ -19,6 +19,7 @@ public sealed class FilesModel(AuthorAccess access, SubmissionStore store, GameC
     public string? FileName { get; private set; }
     public string? Preview { get; private set; }
     public bool Truncated { get; private set; }
+    public bool IsImage { get; private set; }
     public int Number { get; private set; } = 1;
     public string T(string zh, string en) => English ? en : zh;
     public string Link(int number, bool? english = null) => $"/files?number={number}&lang={((english ?? English) ? "en" : "zh")}";
@@ -37,7 +38,7 @@ public sealed class FilesModel(AuthorAccess access, SubmissionStore store, GameC
         Response.Headers.CacheControl = "no-store";
         Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
         Response.Headers["X-Content-Type-Options"] = "nosniff";
-        Response.Headers.ContentSecurityPolicy = "default-src 'none'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
+        Response.Headers.ContentSecurityPolicy = "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
         // The entry pipeline restores this address only for explicitly trusted proxies.
         // Never read visitor-supplied forwarding headers directly as proof of author access.
         if (!access.Allows(HttpContext.Connection.RemoteIpAddress))
@@ -72,10 +73,16 @@ public sealed class FilesModel(AuthorAccess access, SubmissionStore store, GameC
         try
         {
             await using var stream = await store.OpenAuthorFileAsync(submission, name, HttpContext.RequestAborted);
+            Submission = submission; FileName = name;
+            if (ScreenshotFormat.ContentType(name!) is not null)
+            {
+                IsImage = await ScreenshotFormat.MatchesAsync(name!, stream, HttpContext.RequestAborted);
+                if (!IsImage) Error = T("图片格式无效。", "Invalid image format.");
+                return Page();
+            }
             using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
             var buffer = new char[65537];
             var count = await reader.ReadBlockAsync(buffer.AsMemory(), HttpContext.RequestAborted);
-            Submission = submission; FileName = name;
             Truncated = count > 65536;
             if (buffer.AsSpan(0, count).Contains('\0'))
                 Error = T("这个文件无法以文字预览，请下载查看。", "This file can't be shown as text. Download it to view it.");
@@ -92,6 +99,26 @@ public sealed class FilesModel(AuthorAccess access, SubmissionStore store, GameC
         {
             var stream = await store.OpenAuthorFileAsync(submission, name, HttpContext.RequestAborted);
             return File(stream, "application/octet-stream", name!);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { return Missing(); }
+    }
+
+    public async Task<IActionResult> OnGetImageAsync(string? submission, string? name)
+    {
+        var contentType = name is null ? null : ScreenshotFormat.ContentType(name);
+        if (contentType is null) return Missing();
+        try
+        {
+            var stream = await store.OpenAuthorFileAsync(submission, name, HttpContext.RequestAborted);
+            try
+            {
+                if (await ScreenshotFormat.MatchesAsync(name!, stream, HttpContext.RequestAborted))
+                    return File(stream, contentType);
+                await stream.DisposeAsync();
+                return Missing();
+            }
+            catch { await stream.DisposeAsync(); throw; }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         { return Missing(); }

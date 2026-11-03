@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace SendMeTheFuckingLog.Storage;
 
 public sealed record AuthorFile(string Name, long Size);
-public sealed record AuthorSubmission(string Id, string? Nickname, string? GameId, AuthorFile[] Files);
+public sealed record AuthorSubmission(string Id, string? Nickname, string? GameId, AuthorFile[] Files, string Kind = "logs");
 public sealed record AuthorListing(AuthorSubmission[] Submissions, int Page, int TotalPages);
 
 public sealed partial class SubmissionStore
@@ -39,7 +39,7 @@ public sealed partial class SubmissionStore
                 }
                 var id = Path.GetFileName(directory);
                 if (information?.SubmissionId != id) information = null;
-                submissions.Add(new(id, information?.Nickname, information?.GameId, files.ToArray()));
+                submissions.Add(new(id, information?.Nickname, information?.GameId, files.ToArray(), information?.Kind ?? "logs"));
             }
             return new(submissions.ToArray(), page, totalPages);
         }
