@@ -36,7 +36,6 @@
 | 配置项 | 用途 |
 | --- | --- |
 | `UploadPage.AuthorName` | 上传页面显示的收件作者名称 |
-| `UploadPage.AutomaticGuideImages` | 自动模式的演示图片路径，可使用 `{lang}` |
 | `ImageHosting.BaseUrl` | 图片托管地址，格式为 `https://图片域名` |
 | `AuthorAccess.AllowedClients` | 后台访问白名单，支持域名、IPv4、IPv6，或 `*`（任意 IP） |
 | `Storage.MaxStorageMiB` | 上传存储总容量，默认 1024 MiB |
@@ -64,6 +63,8 @@
 ### 图片及 GIF 托管
 
 所有界面图片和动图从独立托管地址加载，访客直接访问图片服务，减少应用服务器的出站流量。可使用 Cloudflare Pages 托管仓库中的 [wwwroot/images](wwwroot/images)。
+
+自动模式使用内置的通用演示 GIF，无需配置路径；手动模式的指引图片由各游戏配置指定。两者均使用 `ImageHosting.BaseUrl`，并自动选择中英文素材。
 
 1. 在 Cloudflare 中创建 **Pages** 项目，连接自己的 GitHub 仓库。
 2. 生产分支选择 `main`，框架选择 `None`，构建命令填写 `exit 0`，构建输出目录填写 `wwwroot/images`，根目录使用仓库根目录。详见 [Cloudflare 官方指南](https://developers.cloudflare.com/pages/framework-guides/deploy-anything/)。
@@ -97,14 +98,20 @@
 
 ### 1. 设置 GitHub 变量和密钥
 
-在自己仓库的 **Settings → Secrets and variables → Actions** 配置：
+推荐在自己仓库的 **Settings → Secrets and variables → Actions** 配置部署连接参数和密钥：
 
 | 类型 | 名称 | 内容 |
 | --- | --- | --- |
 | Variable | `DEPLOY_HOST` | 服务器主机名或公网 IPv4 地址 |
 | Variable | `DEPLOY_USER` | SSH 登录用户名 |
-| Variable | `DEPLOY_PORT` | SSH 端口，即使使用默认端口也要填写 |
+| Variable | `DEPLOY_PORT` | SSH 端口，默认 `22` |
 | Secret | `DEPLOY_SSH_KEY` | 用于部署的 SSH 私钥内容，对应公钥需已安装到服务器 |
+
+也可以使用私有配置仓库集中管理个人设置。在主仓库设置 Variable `CONFIG_REPOSITORY`（格式为 `所有者/仓库名`），并设置 Secret `CONFIG_READ_KEY`，内容为具有该配置仓库只读权限的 SSH 私钥。
+
+私有配置仓库根目录的 `instance.json` 可填写 `Deployment.Host`、`Deployment.User`、`Deployment.Port` 和 `Deployment.Mode`；当前支持 `Direct`（直接部署）和 `BehindProxy`（反向代理）模式，默认 `Direct`。作者名称、图片域名、网站域名等设置也可以在此覆盖。未填写的设置继承主仓库的公开默认值，密钥继续保存在 GitHub Secrets。
+
+部署时按“公开默认配置 → 私有配置 → 非空 GitHub Variables”依次覆盖。`DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_PORT` 仍然有效；如果希望完全使用私有配置中的对应值，请删除同名 Variables 或将其留空。其他配置也可通过 `节名__参数名` 格式的 Variable 覆盖，例如 `Deployment__Mode`。未指定配置仓库时，直接使用公开配置和 Variables 部署。
 
 镜像包须为 **Public**，关联当前仓库并授予其 Actions 管理权限。首次推送若创建成 Private，在包设置中改为 Public 后重新运行工作流。设置方法见 [GitHub 包权限说明](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility)。
 

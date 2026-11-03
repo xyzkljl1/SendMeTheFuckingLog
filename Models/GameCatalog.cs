@@ -1,12 +1,10 @@
 using System.Text.Json;
-using Microsoft.Extensions.Options;
 
 namespace SendMeTheFuckingLog.Models;
 
 public sealed class UploadPageOptions
 {
     public string AuthorName { get; set; } = "Mod Author";
-    public string[] AutomaticGuideImages { get; set; } = [];
 }
 
 public sealed record LocalizedText(string Zh, string En);
@@ -22,16 +20,18 @@ public sealed record GameRecognition(Dictionary<string, string> Ue, Dictionary<s
 
 public sealed class GameCatalog
 {
+    private const string AutomaticGuidePath = "guides/steam-drag-phantom-blade-zero-demo-{lang}.gif";
+
     public IReadOnlyList<SupportedGame> Games { get; }
     public GameRecognition Recognition { get; }
     public LocalizedText[] AutomaticGuideImages { get; }
 
-    public GameCatalog(IWebHostEnvironment environment, HostedImageUrls images, IOptions<UploadPageOptions> uploadPage)
+    public GameCatalog(IWebHostEnvironment environment, HostedImageUrls images)
     {
         var directory = Path.Combine(environment.ContentRootPath, "Configuration", "Games");
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         var games = new List<SupportedGame>();
-        AutomaticGuideImages = (uploadPage.Value.AutomaticGuideImages ?? []).Select(images.ResolveLocalized).ToArray();
+        AutomaticGuideImages = [images.ResolveLocalized(AutomaticGuidePath)];
 
         foreach (var path in Directory.EnumerateFiles(directory, "*.json").Order(StringComparer.Ordinal))
         {

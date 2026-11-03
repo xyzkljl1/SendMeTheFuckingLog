@@ -23,7 +23,14 @@ public static class InstanceConfiguration
 
         var environmentFile = $"appsettings.{environment.EnvironmentName}.json";
         var environmentPath = Path.Combine(root, environmentFile);
-        if (File.Exists(environmentPath)) Merge(settings, Read(environmentPath));
+        if (environment.IsDevelopment())
+        {
+            // Development overrides live in the shared file and can also be customized by the instance.
+            // Ignore any obsolete appsettings.Development.json left in an existing build directory.
+            if (settings["Development"] is JsonObject development) Merge(settings, development);
+        }
+        else if (File.Exists(environmentPath)) Merge(settings, Read(environmentPath));
+        settings.Remove("Development");
 
         // Replace the default JSON sources, rather than layering over their array indices.
         // Existing environment, command-line and test providers retain their precedence.

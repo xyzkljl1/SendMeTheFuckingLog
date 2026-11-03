@@ -230,6 +230,8 @@ public sealed class BrowserTests
         {
             await page.Locator($"[data-language='{language}']").ClickAsync();
             var catalog = app.Services.GetRequiredService<GameCatalog>();
+            var automaticGuide = Assert.Single(catalog.AutomaticGuideImages);
+            Assert.Contains($"-{language}.gif?v=", language == "zh" ? automaticGuide.Zh : automaticGuide.En);
             var urls = catalog.Games.Select(game => game.Image)
                 .Concat(catalog.AutomaticGuideImages.Select(image => language == "zh" ? image.Zh : image.En))
                 .Concat(catalog.Games.SelectMany(game => game.Instructions).SelectMany(step => step.ImageUrls)
