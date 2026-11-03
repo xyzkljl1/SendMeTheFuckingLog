@@ -85,7 +85,9 @@ sudo bash init-ubuntu.sh
 
 ### 图片及 GIF 托管
 
-所有界面图片和动图从独立托管地址加载，访客直接访问图片服务，减少应用服务器的出站流量。可使用 Cloudflare Pages 托管仓库中的 [wwwroot/images](wwwroot/images)。
+正式部署的界面图片和动图从独立托管地址加载，访客直接访问图片服务，减少应用服务器的出站流量。可使用 Cloudflare Pages 托管仓库中的 [wwwroot/images](wwwroot/images)。
+
+本机开发默认通过 `Development.ImageHosting.BaseUrl` 的 `/images` 地址预览项目内素材，无需先推送。替换同名图片后刷新页面即可看到变化；修改图片路径或游戏配置后重新运行网站。需要在本机查看托管效果时，将该开发配置改为托管域名。开发环境的本地素材不缓存。
 
 自动模式使用内置的通用演示 GIF，无需配置路径；手动模式的指引图片由各游戏配置指定。两者均使用 `ImageHosting.BaseUrl`，并自动选择中英文素材。
 

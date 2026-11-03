@@ -70,12 +70,14 @@ public sealed class TestWorld : IAsyncDisposable
 public sealed class TestApplication(TestWorld world, Dictionary<string, string?>? settings) : WebApplicationFactory<Program>
 {
     public string ContentRoot { get; set; } = TestWorld.Project;
+    public string WebRoot { get; set; } = Path.Combine(TestWorld.Project, "wwwroot");
+    public string EnvironmentName { get; set; } = "Testing";
     public IPAddress? ClientAddress { get; set; } = IPAddress.Loopback;
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseContentRoot(ContentRoot);
-        builder.UseWebRoot(Path.Combine(TestWorld.Project, "wwwroot"));
-        builder.UseEnvironment("Testing");
+        builder.UseWebRoot(WebRoot);
+        builder.UseEnvironment(EnvironmentName);
         var values = new Dictionary<string, string?>
         {
             ["Tls:Enabled"] = "false",

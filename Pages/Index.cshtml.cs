@@ -8,9 +8,9 @@ namespace SendMeTheFuckingLog.Pages;
 public sealed class IndexModel(GameCatalog catalog, IOptions<UploadPageOptions> options, StorageLimits limits,
     HostedImageUrls images) : PageModel
 {
-    public string ImageOrigin => images.Origin;
+    public string? ImageOrigin => images.Origin;
     public IEnumerable<string> PreloadedImages => catalog.Games.Select(game => game.Image)
-        .OfType<string>().Where(url => !new Uri(url).AbsolutePath.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+        .OfType<string>().Where(url => !url.Split('?', 2)[0].EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
         .Distinct(StringComparer.Ordinal).Take(2);
     public object PageConfiguration => new
     {

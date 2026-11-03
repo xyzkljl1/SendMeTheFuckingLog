@@ -10,7 +10,10 @@
     <meta name="color-scheme" content="light" />
     <meta name="request-verification-token" content="@Antiforgery.GetAndStoreTokens(HttpContext).RequestToken" />
     <title>发送诊断文件 · Mod Log Helper</title>
-    <link rel="preconnect" href="@Model.ImageOrigin" />
+    @if (Model.ImageOrigin is { } imageOrigin)
+    {
+        <link rel="preconnect" href="@imageOrigin" />
+    }
     @foreach (var image in Model.PreloadedImages)
     {
         <link rel="preload" as="image" href="@image" referrerpolicy="no-referrer" />

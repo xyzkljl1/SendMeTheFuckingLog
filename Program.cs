@@ -50,6 +50,7 @@ try
         .AddKeyManagementOptions(options => options.XmlRepository = new InMemoryKeyRepository());
 
     var app = builder.Build();
+    var images = app.Services.GetRequiredService<HostedImageUrls>();
     var proxy = app.Services.GetRequiredService<ReverseProxyHeaders>();
     var https = app.Services.GetRequiredService<HttpsTransport>();
     app.Services.GetRequiredService<SubmissionStore>().Initialize();
@@ -113,7 +114,14 @@ try
             await context.Response.WriteAsync("网站暂时繁忙，请稍后重试。 / The website is busy. Please try again later.");
         }
     });
-    app.UseStaticFiles();
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        OnPrepareResponse = context =>
+        {
+            if (images.LocalPathPrefix is { } prefix && context.Context.Request.Path.StartsWithSegments(prefix))
+                context.Context.Response.Headers.CacheControl = "no-store";
+        }
+    });
     app.MapRazorPages();
     app.MapPost("/api/uploads", UploadEndpoint.HandleAsync);
     app.Run();

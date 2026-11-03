@@ -42,13 +42,16 @@ public sealed class InstanceConfigurationTests
         Assert.False(configuration.GetValue<bool>("ReverseProxy:Enabled"));
         Assert.Equal(new[] { "127.0.0.1", "::1" }, configuration.GetSection("AuthorAccess:AllowedClients").Get<string[]>());
         Assert.Equal(10, configuration.GetValue<int>("Storage:MaxFileMiB"));
+        Assert.Equal("/images", configuration["ImageHosting:BaseUrl"]);
 
         using var explicitSettings = Load(world, "Development", new()
         {
-            ["Tls:Enabled"] = "true", ["ReverseProxy:Enabled"] = "true"
+            ["Tls:Enabled"] = "true", ["ReverseProxy:Enabled"] = "true",
+            ["ImageHosting:BaseUrl"] = "https://assets.example.net"
         });
         Assert.True(explicitSettings.GetValue<bool>("Tls:Enabled"));
         Assert.True(explicitSettings.GetValue<bool>("ReverseProxy:Enabled"));
+        Assert.Equal("https://assets.example.net", explicitSettings["ImageHosting:BaseUrl"]);
     }
 
     [Fact]
@@ -89,6 +92,7 @@ public sealed class InstanceConfigurationTests
         using (var defaults = Load(world, "Production"))
         {
             Assert.Equal("Mod Author", defaults["UploadPage:AuthorName"]);
+            Assert.Equal("https://your-images-project.pages.dev", defaults["ImageHosting:BaseUrl"]);
             Assert.Empty(defaults.GetSection("AuthorAccess:AllowedClients").Get<string[]>() ?? []);
         }
         world.Write("site/config/instance.json", """

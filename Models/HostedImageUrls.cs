@@ -4,20 +4,38 @@ namespace SendMeTheFuckingLog.Models;
 
 public sealed class HostedImageUrls
 {
-    private readonly Uri origin;
+    private readonly string baseUrl;
     private readonly string imageRoot;
-    public string Origin => origin.GetLeftPart(UriPartial.Authority);
+    public string? Origin { get; }
+    public string? LocalPathPrefix { get; }
 
     public HostedImageUrls(IConfiguration configuration, IWebHostEnvironment environment)
     {
         var value = configuration["ImageHosting:BaseUrl"];
         if (string.IsNullOrWhiteSpace(value) || value.Any(char.IsControl) || value.Contains('\\')
-            || !Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            || value != value.Trim())
+            throw new InvalidOperationException("ImageHosting:BaseUrl must be an HTTPS origin, or a site-relative path in Development.");
+        if (value.StartsWith('/'))
+        {
+            if (!environment.IsDevelopment() || value.StartsWith("//", StringComparison.Ordinal)
+                || value.IndexOfAny([':', '?', '#', '%', '{', '}']) >= 0)
+                throw new InvalidOperationException("A site-relative ImageHosting:BaseUrl is only allowed in Development, for example /images.");
+            var path = value[1..].TrimEnd('/');
+            var parts = path.Length == 0 ? [] : path.Split('/');
+            if (parts.Any(part => part is "" or "." or ".."))
+                throw new InvalidOperationException("ImageHosting:BaseUrl must not contain empty, current or parent directory segments.");
+            LocalPathPrefix = path.Length == 0 ? "" : "/" + path;
+            baseUrl = (parts.Length == 0 ? "" : "/" + string.Join('/', parts.Select(Uri.EscapeDataString))) + "/";
+            imageRoot = Path.Combine(environment.WebRootPath, Path.Combine(parts));
+            return;
+        }
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)
             || uri.Scheme != Uri.UriSchemeHttps || string.IsNullOrEmpty(uri.Host)
             || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0
             || uri.AbsolutePath != "/")
             throw new InvalidOperationException("ImageHosting:BaseUrl must be an HTTPS origin without credentials, a path, query or fragment.");
-        origin = uri;
+        Origin = uri.GetLeftPart(UriPartial.Authority);
+        baseUrl = uri.AbsoluteUri;
         imageRoot = Path.Combine(environment.WebRootPath, "images");
     }
 
@@ -40,7 +58,7 @@ public sealed class HostedImageUrls
             || !new[] { ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif" }
                 .Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
             throw new InvalidOperationException("Image paths must be relative to ImageHosting:BaseUrl, for example games/cover.gif.");
-        var url = new Uri(origin, string.Join('/', path.Split('/').Select(Uri.EscapeDataString))).AbsoluteUri;
+        var url = baseUrl + string.Join('/', path.Split('/').Select(Uri.EscapeDataString));
         var file = Path.Combine(imageRoot, Path.Combine(path.Split('/')));
         if (File.Exists(file))
         {
