@@ -117,7 +117,6 @@ summary:focus-visible{outline:3px solid #e5ae53;outline-offset:4px}
 .screenshot-method+.screenshot-method{margin-top:24px;padding-top:24px;border-top:1px solid var(--line)}
 .screenshot-help .guide-image-frame{display:block;aspect-ratio:auto;min-height:80px}
 .screenshot-help .guide-image img{height:auto}
-.screenshot-credit{display:block;margin-top:6px;font-size:11px;line-height:1.5;color:var(--muted)}
 .screenshot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;list-style:none;margin:18px 0 0;padding:0}
 .screenshot-card{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fafcfb}
 .screenshot-preview{display:grid;place-items:center;height:140px;background:#eef3f0;border-radius:6px;overflow:hidden}
