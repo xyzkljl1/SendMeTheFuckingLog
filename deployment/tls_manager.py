@@ -101,7 +101,8 @@ def issue_or_renew(domain):
     plain(renewal)
     args += [CERTBOT]
     if renewal.exists():
-        args += ["renew", "--cert-name", domain, "--webroot", "--webroot-path", "/webroot"]
+        args += ["renew", "--no-random-sleep-on-renew", "--cert-name", domain,
+                 "--webroot", "--webroot-path", "/webroot"]
     else:
         args += ["certonly", "--webroot", "--webroot-path", "/webroot", "--cert-name", domain,
                  "--domains", domain, "--agree-tos", "--register-unsafely-without-email"]
