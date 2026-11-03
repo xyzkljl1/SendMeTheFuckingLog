@@ -14,7 +14,7 @@
             chooseRoute: "选择方式", autoTitle: "自动选择日志", manualTitle: "手动选择日志",
             folderHeading: "将整个游戏文件夹拖入", folderDescription: "Steam 中右键游戏 → 管理 → 浏览本地文件。",
             dragInstruction: "全选文件，拖入右侧区域。", dragInstructionBelow: "全选文件，拖入下方区域。",
-            dropFolder: "拖到这里", chooseFolder: "浏览文件",
+            dropFolder: "拖到这", chooseFolder: "浏览文件",
             folderPrivacy: "不会上传整个游戏，只会上传日志", supported: "支持的游戏",
             identifying: "正在识别游戏… 文件不会发送。", droppedContents: "拖入的内容",
             detectedGame: "已识别游戏", multipleGames: "识别到多个游戏，请只拖入一个游戏的安装文件夹，或使用手动选择日志。",
