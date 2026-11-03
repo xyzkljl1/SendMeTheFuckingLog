@@ -361,12 +361,10 @@
             image.referrerPolicy = "no-referrer";
             const error = make("span", "guide-image-error", text("guideImageUnavailable"));
             error.hidden = true;
-            image.addEventListener("error", () => { image.hidden = true; error.hidden = false; expand.hidden = true; link.removeAttribute("href"); });
+            image.addEventListener("error", () => { image.hidden = true; error.hidden = false; link.removeAttribute("href"); });
             image.src = url; frame.append(image, error); link.append(frame);
-            const expand = make("span", "guide-image-expand", "⛶");
-            expand.setAttribute("aria-hidden", "true");
             link.title = text("guideImageOpen");
-            link.append(expand); figure.append(link); container.append(figure);
+            figure.append(link); container.append(figure);
         }
     }
     function fileGroups(files) {
