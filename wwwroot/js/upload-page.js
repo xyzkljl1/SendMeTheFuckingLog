@@ -12,6 +12,12 @@
             title: "上传日志给",
             screenshotsTitle: "上传截图", screenshotsPageTitle: "上传截图给", screenshotsHeading: "添加截图",
             dropScreenshots: "拖入截图，或按 Ctrl+V 粘贴", chooseScreenshots: "选择截图", removeScreenshot: "删除截图",
+            screenshotHelp: "如何截图？",
+            screenshotRegionStart: "方法 1：按",
+            screenshotRegionHint: "+Shift+S，框选截图区域，再回到本页按 Ctrl+V 添加。",
+            screenshotFullscreenStart: "方法 2：按",
+            screenshotFullscreenHint: "+PrtSc（Print Screen）截取全屏，再回到本页按 Ctrl+V 添加；若无法粘贴，点击“选择截图”，从“图片/屏幕截图”中添加图片。",
+            screenshotToolHint: "方法 3：在开始菜单搜索并打开“截图工具”，点击“新建”并框选截图区域，在截图预览中按 Ctrl+C，再回到本页按 Ctrl+V 添加。",
             invalidImage: "图片格式无效，请选择 PNG、JPG 或 WebP 图片。",
             invalidImageName: "图片文件名过长或含特殊字符，请重命名后添加。",
             tooManyScreenshots: "每次最多添加 {count} 张截图。", imagePreviewFailed: "图片无法预览，请删除后重新选择。",
@@ -65,6 +71,12 @@
             title: "Upload logs to",
             screenshotsTitle: "Upload screenshots", screenshotsPageTitle: "Upload screenshots to", screenshotsHeading: "Add screenshots",
             dropScreenshots: "Drop screenshots here, or paste with Ctrl+V", chooseScreenshots: "Choose screenshots", removeScreenshot: "Remove screenshot",
+            screenshotHelp: "How do I take a screenshot?",
+            screenshotRegionStart: "Method 1: Press",
+            screenshotRegionHint: "+Shift+S, drag to select an area, then return here and press Ctrl+V to add it.",
+            screenshotFullscreenStart: "Method 2: Press",
+            screenshotFullscreenHint: "+PrtSc (Print Screen) to capture the full screen, then return here and press Ctrl+V to add it. If pasting does not work, click Choose screenshots and add the image from Pictures/Screenshots.",
+            screenshotToolHint: "Method 3: Search for Snipping Tool in the Start menu and open it. Click New, drag to select an area, press Ctrl+C in the screenshot preview, then return here and press Ctrl+V to add it.",
             invalidImage: "Invalid image format. Choose PNG, JPG or WebP images.",
             invalidImageName: "The image filename is too long or contains special characters. Rename it and try again.",
             tooManyScreenshots: "Add up to {count} screenshots per upload.", imagePreviewFailed: "Cannot preview this image. Remove it and choose again.",
@@ -623,6 +635,11 @@
         renderSelection(); renderStatus();
         if (wasEmpty && state.screenshotsFiles.length && !sizeErrors(state.screenshotsFiles).length) showNextStepHints();
     }
+    $("toggle-screenshot-help").addEventListener("click", () => {
+        const help = $("screenshot-help");
+        help.hidden = !help.hidden;
+        $("toggle-screenshot-help").setAttribute("aria-expanded", String(!help.hidden));
+    });
     $("choose-screenshots").addEventListener("click", () => $("screenshots-input").click());
     $("screenshots-input").addEventListener("change", event => { addScreenshots(Array.from(event.target.files)); event.target.value = ""; });
     document.addEventListener("paste", event => {

@@ -122,11 +122,20 @@
             </section>
 
             <section id="screenshots-panel" aria-labelledby="screenshots-heading" hidden>
-                <div class="step-heading"><span class="step-number">1</span><h2 id="screenshots-heading" data-i18n="screenshotsHeading">添加截图</h2></div>
-                <div id="screenshots-drop" class="drop-zone">
-                    <h3 data-i18n="dropScreenshots">拖入截图，或按 Ctrl+V 粘贴</h3>
-                    <button type="button" class="primary-button" id="choose-screenshots" data-i18n="chooseScreenshots">选择截图</button>
-                    <input id="screenshots-input" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" multiple hidden />
+                <div class="step-heading"><span class="step-number">1</span><div><h2 id="screenshots-heading" data-i18n="screenshotsHeading">添加截图</h2><button type="button" id="toggle-screenshot-help" class="screenshot-help-button" aria-expanded="false" aria-controls="screenshot-help"><span class="screenshot-help-icon" aria-hidden="true">?</span><span data-i18n="screenshotHelp">如何截图？</span><span class="screenshot-help-chevron" aria-hidden="true"></span></button></div></div>
+                <div class="guide-layout screenshot-layout">
+                    <div id="screenshot-help" class="screenshot-help" hidden>
+                        <p class="hint"><span data-i18n="screenshotRegionStart">方法 1：按</span> <kbd class="windows-key"><img src="@Model.WindowsKeyImage" alt="" width="18" height="18" loading="lazy" referrerpolicy="no-referrer" />Win</kbd><span data-i18n="screenshotRegionHint">+Shift+S，框选截图区域，再回到本页按 Ctrl+V 添加。</span></p>
+                        <p class="hint"><span data-i18n="screenshotFullscreenStart">方法 2：按</span> <kbd class="windows-key"><img src="@Model.WindowsKeyImage" alt="" width="18" height="18" loading="lazy" referrerpolicy="no-referrer" />Win</kbd><span data-i18n="screenshotFullscreenHint">+PrtSc（Print Screen）截取全屏，再回到本页按 Ctrl+V 添加；若无法粘贴，点击“选择截图”，从“图片/屏幕截图”中添加图片。</span></p>
+                        <p class="hint" data-i18n="screenshotToolHint">方法 3：在开始菜单搜索并打开“截图工具”，点击“新建”并框选截图区域，在截图预览中按 Ctrl+C，再回到本页按 Ctrl+V 添加。</p>
+                    </div>
+                    <div class="guide-actions">
+                        <div id="screenshots-drop" class="drop-zone">
+                            <h3 data-i18n="dropScreenshots">拖入截图，或按 Ctrl+V 粘贴</h3>
+                            <button type="button" class="primary-button" id="choose-screenshots" data-i18n="chooseScreenshots">选择截图</button>
+                            <input id="screenshots-input" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" multiple hidden />
+                        </div>
+                    </div>
                 </div>
                 <p id="screenshots-status" class="status" role="status" aria-live="polite"></p>
                 <p id="screenshots-size-error" class="status error" role="status" aria-live="polite" hidden></p>
