@@ -69,10 +69,12 @@ public sealed class TestWorld : IAsyncDisposable
 
 public sealed class TestApplication(TestWorld world, Dictionary<string, string?>? settings) : WebApplicationFactory<Program>
 {
+    public string ContentRoot { get; set; } = TestWorld.Project;
     public IPAddress? ClientAddress { get; set; } = IPAddress.Loopback;
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseContentRoot(TestWorld.Project);
+        builder.UseContentRoot(ContentRoot);
+        builder.UseWebRoot(Path.Combine(TestWorld.Project, "wwwroot"));
         builder.UseEnvironment("Testing");
         var values = new Dictionary<string, string?>
         {

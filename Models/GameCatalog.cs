@@ -17,7 +17,7 @@ public sealed record GuideInstruction(string Zh, string En, string[]? Images = n
 public sealed record DiagnosticFile(string Id, LocalizedText Name, string Kind, string[] Paths, bool IsPrimary = false);
 public sealed record SupportedGame(
     string Id, LocalizedText Name, GuideInstruction[] Instructions, DiagnosticFile[] Files, string[] ExecutablePaths,
-    string? Image = null, bool IsDemo = false);
+    string? Image = null, bool IsDemo = false, bool Enable = true);
 public sealed record GameRecognition(Dictionary<string, string> Ue, Dictionary<string, string> Re);
 
 public sealed class GameCatalog
@@ -51,14 +51,7 @@ public sealed class GameCatalog
                 || game.Files.Select(file => file.Id).Distinct(StringComparer.Ordinal).Count() != game.Files.Length
                 || games.Any(existing => existing.Id == game.Id))
                 throw new InvalidOperationException($"Invalid game configuration: {Path.GetFileName(path)}");
-            games.Add(game with
-            {
-                Image = game.Image is null ? null : images.Resolve(game.Image),
-                Instructions = game.Instructions.Select(instruction => instruction with
-                {
-                    ImageUrls = (instruction.Images ?? []).Select(images.ResolveLocalized).ToArray()
-                }).ToArray()
-            });
+            games.Add(game);
         }
 
         Recognition = JsonSerializer.Deserialize<GameRecognition>(File.ReadAllText(
@@ -70,7 +63,18 @@ public sealed class GameCatalog
         ValidateMappings(Recognition.Re, true);
         if (games.Any(game => !game.IsDemo && !genericGames.Contains(game.Id) && game.ExecutablePaths.Length == 0))
             throw new InvalidOperationException("Games without generic recognition need executablePaths.");
-        Games = games.AsReadOnly();
+        Games = games.Where(game => game.Enable).Select(game => game with
+        {
+            Image = game.Image is null ? null : images.Resolve(game.Image),
+            Instructions = game.Instructions.Select(instruction => instruction with
+            {
+                ImageUrls = (instruction.Images ?? []).Select(images.ResolveLocalized).ToArray()
+            }).ToArray()
+        }).ToList().AsReadOnly();
+        var enabledIds = Games.Select(game => game.Id).ToHashSet(StringComparer.Ordinal);
+        Recognition = new(
+            Recognition.Ue.Where(pair => enabledIds.Contains(pair.Value)).ToDictionary(),
+            Recognition.Re.Where(pair => enabledIds.Contains(pair.Value)).ToDictionary());
 
         void ValidateMappings(Dictionary<string, string>? mappings, bool executable)
         {

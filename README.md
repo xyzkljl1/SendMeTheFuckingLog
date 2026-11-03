@@ -2,6 +2,8 @@
 
 给 Mod 作者使用的日志收集网站。用户按照图文指引选择游戏文件、填写昵称并发送，作者在自己的服务器上查看和下载日志。
 
+演示地址：[www.sendmethefuckinglog.top](https://www.sendmethefuckinglog.top/)
+
 ## AI 生成说明
 
 本项目的代码、文案和文档包含 OpenAI Codex 生成及修改的内容，功能需求由作者提出。
@@ -53,6 +55,7 @@
 在 [Configuration/Games](Configuration/Games) 中为每款游戏维护一份配置，填写游戏标识、中英文名称、封面、操作说明、识别条件及文件清单。
 
 - 文件路径相对于游戏安装根目录填写。
+- `enable` 控制游戏是否启用，省略时默认为 `true`。设置为 `false` 后，该游戏停止展示、自动识别和接收上传；配置、识别映射及素材可以保留。
 - `files` 定义需要收集的文件；`kind` 使用 `log` 或 `config`，`isPrimary: true` 表示手动模式必须上传。
 - `instructions` 提供中英文操作说明，每条说明的 `images` 可以包含多张图片或 GIF。
 - [Configuration/GameRecognition.json](Configuration/GameRecognition.json) 维护 UE 根目录名称、RE 根目录 EXE 名称到游戏标识的映射。未采用通用规则的游戏使用自身 `executablePaths` 识别。

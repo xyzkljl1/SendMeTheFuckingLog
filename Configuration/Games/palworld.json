@@ -1,5 +1,6 @@
 {
   "id": "palworld",
+  "enable": true,
   "name": { "zh": "幻兽帕鲁", "en": "Palworld" },
   "image": "games/palworld.webp",
   "executablePaths": [],
