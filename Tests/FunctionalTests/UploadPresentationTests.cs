@@ -51,7 +51,7 @@ public sealed class UploadPresentationTests
         await Expect(page.Locator("#optional-guide-steps")).ToBeHiddenAsync();
         await Expect(page.Locator("#guide-steps")).Not.ToContainTextAsync("UE4SS-settings.ini");
         await Expect(page.Locator("#manual-size-error")).ToBeHiddenAsync();
-        await Expect(page.GetByLabel("Enter your nickname", new() { Exact = true })).ToHaveCountAsync(1);
+        await Expect(page.GetByRole(AriaRole.Textbox, new() { Name = "Enter your nickname", Exact = true })).ToHaveCountAsync(1);
         await page.Locator("#optional-files summary").ClickAsync();
         await Expect(page.Locator("#optional-guide-steps")).ToContainTextAsync("UE4SS-settings.ini");
         await page.Locator("[data-language='zh']").ClickAsync();
