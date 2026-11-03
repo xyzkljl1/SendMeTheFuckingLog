@@ -114,7 +114,10 @@ summary:focus-visible{outline:3px solid #e5ae53;outline-offset:4px}
 .screenshot-help-button[aria-expanded=true] .screenshot-help-chevron{transform:translateY(2px) rotate(225deg)}
 .screenshot-layout:has(> .screenshot-help[hidden]){grid-template-columns:minmax(0,1fr)}
 .screenshot-help{min-width:0}.screenshot-help p{margin:0 0 14px;line-height:1.7}
-.windows-key{display:inline-block;vertical-align:middle;margin:0 3px;padding:2px 6px;border:1px solid #aabbb3;border-bottom-width:3px;border-radius:4px;background:#f6f8f7;color:#203233;font:inherit;white-space:nowrap}
+.screenshot-method+.screenshot-method{margin-top:24px;padding-top:24px;border-top:1px solid var(--line)}
+.screenshot-help .guide-image-frame{display:block;aspect-ratio:auto;min-height:80px}
+.screenshot-help .guide-image img{height:auto}
+.screenshot-credit{display:block;margin-top:6px;font-size:11px;line-height:1.5;color:var(--muted)}
 .screenshot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;list-style:none;margin:18px 0 0;padding:0}
 .screenshot-card{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fafcfb}
 .screenshot-preview{display:grid;place-items:center;height:140px;background:#eef3f0;border-radius:6px;overflow:hidden}

@@ -18,6 +18,10 @@
             screenshotFullscreenStart: "方法 2：按",
             screenshotFullscreenHint: "+PrtSc（Print Screen）截取全屏，再回到本页按 Ctrl+V 添加；若无法粘贴，点击“选择截图”，从“图片/屏幕截图”中添加图片。",
             screenshotToolHint: "方法 3：在开始菜单搜索并打开“截图工具”，点击“新建”并框选截图区域，在截图预览中按 Ctrl+C，再回到本页按 Ctrl+V 添加。",
+            screenshotMethod1Alt: "键盘位置示意：红圈标出需要同时按下的 Win、Shift 和 S。",
+            screenshotMethod2Alt: "键盘位置示意：红圈标出需要同时按下的 Win 和 Print Screen。",
+            screenshotPhotoCredit: "键盘照片：snty-tact（已裁剪、提亮并标注）",
+            screenshotMethod3Alt: "在开始菜单搜索截图工具，点击红圈中的截图工具应用。",
             invalidImage: "图片格式无效，请选择 PNG、JPG 或 WebP 图片。",
             invalidImageName: "图片文件名过长或含特殊字符，请重命名后添加。",
             tooManyScreenshots: "每次最多添加 {count} 张截图。", imagePreviewFailed: "图片无法预览，请删除后重新选择。",
@@ -77,6 +81,10 @@
             screenshotFullscreenStart: "Method 2: Press",
             screenshotFullscreenHint: "+PrtSc (Print Screen) to capture the full screen, then return here and press Ctrl+V to add it. If pasting does not work, click Choose screenshots and add the image from Pictures/Screenshots.",
             screenshotToolHint: "Method 3: Search for Snipping Tool in the Start menu and open it. Click New, drag to select an area, press Ctrl+C in the screenshot preview, then return here and press Ctrl+V to add it.",
+            screenshotMethod1Alt: "Keyboard positions: red circles mark Win, Shift and S. Press these keys together.",
+            screenshotMethod2Alt: "Keyboard positions: red circles mark Win and Print Screen. Press these keys together.",
+            screenshotPhotoCredit: "Keyboard photo: snty-tact (cropped, brightened and annotated)",
+            screenshotMethod3Alt: "English illustration: search for Snipping Tool in Start, then click the circled Snipping Tool app.",
             invalidImage: "Invalid image format. Choose PNG, JPG or WebP images.",
             invalidImageName: "The image filename is too long or contains special characters. Rename it and try again.",
             tooManyScreenshots: "Add up to {count} screenshots per upload.", imagePreviewFailed: "Cannot preview this image. Remove it and choose again.",
@@ -396,6 +404,13 @@
             figure.append(link); container.append(figure);
         }
     }
+    function renderScreenshotGuides() {
+        if ($("screenshot-help").hidden) return;
+        for (let method = 1; method <= 3; method++) {
+            const image = config.screenshotGuideImages?.[method - 1];
+            renderGuideImages($("screenshot-guide-" + method), image ? [image] : [], text("screenshotMethod" + method + "Alt"));
+        }
+    }
     function fileGroups(files) {
         const groups = new Map();
         for (const item of files) {
@@ -513,6 +528,7 @@
         $("nickname-step-number").textContent = state.route === "manual" ? "3" : "2";
         renderDragInstruction();
         renderGuideImages($("automatic-guide"), config.automaticGuideImages || [], text("automaticGuideAlt"));
+        renderScreenshotGuides();
         $("supported-games-sidebar").hidden = state.route !== "auto";
         const supported = games.filter(game => !game.isDemo);
         $("supported-games").replaceChildren();
@@ -639,6 +655,7 @@
         const help = $("screenshot-help");
         help.hidden = !help.hidden;
         $("toggle-screenshot-help").setAttribute("aria-expanded", String(!help.hidden));
+        renderScreenshotGuides();
     });
     $("choose-screenshots").addEventListener("click", () => $("screenshots-input").click());
     $("screenshots-input").addEventListener("change", event => { addScreenshots(Array.from(event.target.files)); event.target.value = ""; });

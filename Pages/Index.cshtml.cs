@@ -17,6 +17,8 @@ public sealed class IndexModel(GameCatalog catalog, IOptions<UploadPageOptions> 
         authorName = options.Value.AuthorName, games = catalog.Games,
         recognition = catalog.Recognition,
         automaticGuideImages = catalog.AutomaticGuideImages,
+        screenshotGuideImages = Enumerable.Range(1, 3)
+            .Select(method => images.ResolveLocalized($"guides/screenshot-method-{method}-{{lang}}.webp")),
         preloadedImages = PreloadedImages,
         maxFileBytes = limits.FileBytes, maxSubmissionBytes = limits.SubmissionBytes,
         maxScreenshotFiles = SubmissionStore.MaxFiles
