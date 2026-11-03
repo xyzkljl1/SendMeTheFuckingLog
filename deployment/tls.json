@@ -1,3 +1,5 @@
 {
-  "Domain": "www.sendmethefuckinglog.top"
+  "Domain": "www.sendmethefuckinglog.top",
+  "Mode": "Direct",
+  "KnownProxies": []
 }

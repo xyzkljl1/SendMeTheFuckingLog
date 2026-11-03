@@ -11,18 +11,22 @@ public sealed class HttpsTransport : IDisposable
     private readonly int httpsPort;
     private readonly X509Certificate2? certificate;
     private readonly X509Certificate2Collection chain = [];
+    private readonly bool behindProxy;
     public bool Enabled { get; }
     public bool Ready => certificate is not null;
     public string Domain { get; } = "";
 
-    public HttpsTransport(IConfiguration configuration, ApplicationPaths paths)
+    public HttpsTransport(IConfiguration configuration, ApplicationPaths paths, ReverseProxyHeaders proxy)
     {
         challengeRoot = Path.Combine(paths.Root, "acme", ".well-known", "acme-challenge");
         Enabled = configuration.GetValue<bool>("Tls:Enabled");
-        if (!Enabled) return; // Local development and pre-publish smoke checks remain HTTP.
+        behindProxy = proxy.Enabled;
+        if (!Enabled && !behindProxy) return; // Local development and pre-publish smoke checks remain HTTP.
         Domain = configuration["Tls:Domain"] ?? "";
         if (Domain.Length > 253 || !Regex.IsMatch(Domain, @"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$"))
             throw new InvalidOperationException("Tls:Domain must be a DNS hostname without a scheme or port.");
+        // External HTTPS still needs canonical redirects and host checks, but no local certificate.
+        if (!Enabled) return;
         var root = Path.Combine(paths.Root, "tls");
         var manifestPath = Path.Combine(root, "active.json");
         EnsurePlain(manifestPath);
@@ -97,8 +101,8 @@ public sealed class HttpsTransport : IDisposable
 
     public async Task<bool> HandleTransportAsync(HttpContext context)
     {
-        if (!Enabled) return false;
-        if (!Ready)
+        if (!Enabled && !behindProxy) return false;
+        if (Enabled && !Ready)
         {
             context.Response.StatusCode = 503;
             context.Response.Headers.CacheControl = "no-store";

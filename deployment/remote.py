@@ -1,5 +1,6 @@
 """Executed over SSH as root; only project systemd units are installed outside ROOT."""
 import importlib.util
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -158,9 +159,18 @@ def install_tls(payload):
     spec.loader.exec_module(manager)
     manager.ROOT = ROOT
     manager.LABEL = APP_LABEL
-    domain = manager.settings(files["tls.json"])
-    manager.prepare()
+    configuration = manager.deployment_settings(files["tls.json"])
+    if configuration["Mode"] == "Direct":
+        manager.prepare()
     atomic_write(directory / "tls.json", files["tls.json"])
+    if configuration["Mode"] == "BehindProxy":
+        # Only disable this project's units. Keep existing certificates for a later direct deployment.
+        if (UNIT_DIRECTORY / TLS_TIMER).exists():
+            run("systemctl", "disable", "--now", TLS_TIMER, timeout=30)
+        if (UNIT_DIRECTORY / TLS_SERVICE).exists():
+            run("systemctl", "stop", TLS_SERVICE, timeout=60)
+        print("TLS: external proxy mode; application renewal disabled, certificates preserved.", flush=True)
+        return manager, configuration
     if (UNIT_DIRECTORY / TLS_TIMER).exists():
         run("systemctl", "stop", TLS_TIMER, timeout=30)
     for name in (TLS_SERVICE, TLS_TIMER):
@@ -170,7 +180,44 @@ def install_tls(payload):
     run("systemctl", "is-enabled", "--quiet", TLS_TIMER)
     run("systemctl", "is-active", "--quiet", TLS_TIMER)
     print("TLS: renewal timer enabled and active.", flush=True)
-    return manager, domain
+    return manager, configuration
+
+
+def proxy_compose(compose, configuration):
+    model = json.loads(output(*compose, "config", "--format", "json"))
+    web = model["services"]["web"]
+    proxies = configuration["KnownProxies"]
+    if not proxies:
+        # Host-based proxies reach a loopback-published container through its bridge gateway.
+        network_name = f"{APP}_default"
+        if model["networks"]["default"]["name"] != network_name:
+            raise RuntimeError("Automatic proxy discovery requires this project's default Docker network.")
+        ids = output("docker", "network", "ls", "--filter", f"name=^{network_name}$", "--format", "{{.ID}}")
+        if not ids:
+            run("docker", "network", "create", "--driver", "bridge",
+                "--label", f"com.docker.compose.project={APP}",
+                "--label", "com.docker.compose.network=default", network_name)
+        info = json.loads(output("docker", "network", "inspect", network_name))[0]
+        labels = info.get("Labels") or {}
+        if (info.get("Driver") != "bridge" or labels.get("com.docker.compose.project") != APP
+                or labels.get("com.docker.compose.network") != "default"):
+            raise RuntimeError("Refusing to trust an unrelated Docker network.")
+        proxies = [str(ipaddress.ip_address(item["Gateway"])) for item in info["IPAM"]["Config"]
+                   if item.get("Gateway")]
+        if not proxies:
+            raise RuntimeError("No Docker gateway found; configure KnownProxies explicitly.")
+        # Docker may retain a host loopback source when userland proxying is disabled.
+        proxies += ["127.0.0.1", "::1"]
+    environment = web.setdefault("environment", {})
+    environment.update({"Tls__Enabled": "false", "ReverseProxy__Enabled": "true"})
+    for index, address in enumerate(proxies):
+        environment[f"ReverseProxy__KnownProxies__{index}"] = address
+    web["ports"] = [{"target": 8080, "published": "8080", "host_ip": "127.0.0.1", "protocol": "tcp"}]
+    web["volumes"] = [volume for volume in web["volumes"] if volume["target"] not in ("/app/tls", "/app/acme")]
+    # JSON is also a Compose YAML document; no additional YAML parser or override syntax is required.
+    atomic_write(ROOT / "compose.yaml", json.dumps(model, indent=2) + "\n")
+    run(*compose, "config", "--quiet")
+    print("PROXY: HTTP bound to 127.0.0.1:8080; trusted peers: " + ", ".join(proxies), flush=True)
 
 
 def check_container(container, run_number):
@@ -248,7 +295,8 @@ def main(payload):
         run("docker", "compose", "version")
         check_container(inspect_container(), payload["run"])
         install_traffic_monitor(payload)
-        tls, domain = install_tls(payload)
+        tls, hosting = install_tls(payload)
+        domain = hosting["Domain"]
         # Reuse the test deployment's data path; no copying or deleting uploads.
         for directory in (ROOT / "app" / "data", ROOT / "app" / "tmp"):
             plain(directory)
@@ -277,6 +325,8 @@ def main(payload):
             compose = docker + ["compose", "--project-name", APP, "--project-directory", str(ROOT),
                                 "--env-file", str(ROOT / "image.env"), "-f", str(ROOT / "compose.yaml")]
             run(*compose, "config", "--quiet")
+            if hosting["Mode"] == "BehindProxy":
+                proxy_compose(compose, hosting)
             # Never clear counters while the old process can checkpoint them again.
             run(*compose, "stop", "--timeout", "150", "web", timeout=180)
             stopped = inspect_container()
@@ -288,7 +338,8 @@ def main(payload):
                 "--wait", "--wait-timeout", "120", "web", timeout=180)
             # A first deployment starts with HTTP validation only. Issuance activates HTTPS.
             # On subsequent deployments, valid persisted certificates are available immediately.
-            tls.ensure_certificate(domain)
+            if hosting["Mode"] == "Direct":
+                tls.ensure_certificate(domain)
             run(*compose, "up", "--detach", "--no-build", "--pull", "never",
                 "--wait", "--wait-timeout", "120", "web", timeout=180)
             current = inspect_container()

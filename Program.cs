@@ -4,13 +4,13 @@ using System.Xml.Linq;
 using SendMeTheFuckingLog.Models;
 using SendMeTheFuckingLog.Storage;
 using SendMeTheFuckingLog.Monitoring;
-using System.Net;
 using SendMeTheFuckingLog.Hosting;
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
     builder.Services.AddSingleton(new ApplicationPaths(AppContext.BaseDirectory));
+    builder.Services.AddSingleton<ReverseProxyHeaders>();
     builder.Services.AddSingleton<HttpsTransport>();
     builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(140));
     builder.WebHost.ConfigureKestrel(options =>
@@ -49,6 +49,7 @@ try
         .AddKeyManagementOptions(options => options.XmlRepository = new InMemoryKeyRepository());
 
     var app = builder.Build();
+    var proxy = app.Services.GetRequiredService<ReverseProxyHeaders>();
     var https = app.Services.GetRequiredService<HttpsTransport>();
     app.Services.GetRequiredService<SubmissionStore>().Initialize();
     var requestCounter = app.Services.GetRequiredService<RequestCounter>();
@@ -56,13 +57,28 @@ try
     app.Use(async (context, next) =>
     {
         // Docker liveness probes are local only and must not consume public quotas.
-        if (context.Request.Path == "/healthz" && HttpMethods.IsGet(context.Request.Method)
-            && context.Connection.RemoteIpAddress is { } address && IPAddress.IsLoopback(address))
+        if (proxy.IsLocalHealthRequest(context))
         {
             context.Response.StatusCode = 200;
             await context.Response.WriteAsync("OK");
             return;
         }
+        if (proxy.Enabled)
+        {
+            var status = proxy.ValidateRequest(context);
+            if (status != StatusCodes.Status200OK)
+            {
+                context.Response.StatusCode = status;
+                context.Response.Headers.CacheControl = "no-store";
+                await context.Response.WriteAsync("代理请求无效。 / Invalid proxy request.");
+                return;
+            }
+        }
+        await next(context);
+    });
+    if (proxy.Enabled) app.UseForwardedHeaders(proxy.Options);
+    app.Use(async (context, next) =>
+    {
         // ACME must remain reachable even when the public request quota is exhausted.
         if (await https.HandleChallengeAsync(context)) return;
         var status = requestCounter.Admit();

@@ -38,8 +38,8 @@ public sealed class FilesModel(AuthorAccess access, SubmissionStore store, GameC
         Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         Response.Headers.ContentSecurityPolicy = "default-src 'none'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
-        // The current deployment exposes Kestrel directly. Never trust visitor-supplied
-        // X-Forwarded-For, CF-Connecting-IP, Host or Referer as proof of author access.
+        // The entry pipeline restores this address only for explicitly trusted proxies.
+        // Never read visitor-supplied forwarding headers directly as proof of author access.
         if (!access.Allows(HttpContext.Connection.RemoteIpAddress))
         {
             context.Result = new ContentResult { StatusCode = 403, ContentType = "text/plain; charset=utf-8",

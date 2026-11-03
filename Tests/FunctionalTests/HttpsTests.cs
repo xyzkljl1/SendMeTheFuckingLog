@@ -93,6 +93,8 @@ public sealed class HttpsTests
         using var http = Client(ports.Http);
         http.DefaultRequestHeaders.Host = "attacker.example";
         http.DefaultRequestHeaders.Add("X-Forwarded-Host", "attacker.example");
+        http.DefaultRequestHeaders.Add("X-Forwarded-Proto", "https");
+        http.DefaultRequestHeaders.Add("X-Forwarded-For", "127.0.0.1");
         using var redirect = await http.GetAsync("/status?lang=en", TestContext.Current.CancellationToken);
         Assert.Equal(308, (int)redirect.StatusCode);
         Assert.Equal("https://logs.example.com/status?lang=en", redirect.Headers.Location!.ToString());

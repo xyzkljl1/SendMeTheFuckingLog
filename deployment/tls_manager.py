@@ -1,5 +1,6 @@
 """Host-side ACME orchestration; the Certbot container exists only during a check."""
 import hashlib
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -51,13 +52,37 @@ def sync_directory(path):
         os.close(descriptor)
 
 
-def settings(text):
+def deployment_settings(text):
     value = json.loads(text)
+    if not isinstance(value, dict) or set(value) - {"Domain", "Mode", "KnownProxies"}:
+        raise ValueError("Unexpected deployment TLS settings.")
     domain = value.get("Domain", "")
-    if (set(value) != {"Domain"} or not isinstance(domain, str) or len(domain) > 253
+    if (not isinstance(domain, str) or len(domain) > 253
             or not re.fullmatch(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}", domain)):
         raise ValueError("TLS settings require one DNS Domain without a scheme or port.")
-    return domain
+    mode = value.get("Mode", "Direct")
+    if mode not in ("Direct", "BehindProxy"):
+        raise ValueError("Deployment Mode must be Direct or BehindProxy.")
+    proxies = value.get("KnownProxies", [])
+    if not isinstance(proxies, list) or len(proxies) > 32:
+        raise ValueError("KnownProxies must be an array of at most 32 IP addresses.")
+    normalized = []
+    for text in proxies:
+        if not isinstance(text, str) or "%" in text:
+            raise ValueError("KnownProxies must contain unicast IP addresses without scope IDs.")
+        address = ipaddress.ip_address(text)
+        if isinstance(address, ipaddress.IPv6Address) and address.ipv4_mapped:
+            address = address.ipv4_mapped
+        if address.is_unspecified or address.is_multicast or (
+                isinstance(address, ipaddress.IPv4Address) and int(address) >= int(ipaddress.IPv4Address("224.0.0.0"))):
+            raise ValueError("KnownProxies must contain individual unicast IP addresses.")
+        normalized.append(str(address))
+    return {"Domain": domain, "Mode": mode, "KnownProxies": normalized}
+
+
+def settings(text):
+    # Keep callers that only need the public domain compatible with the original config.
+    return deployment_settings(text)["Domain"]
 
 
 def prepare():
@@ -245,7 +270,11 @@ def main():
         LABEL = f"io.github.{owner}.application"
         config = ROOT / "tls" / "tls.json"
         plain(config)
-        ensure_certificate(settings(config.read_text(encoding="utf-8")))
+        configuration = deployment_settings(config.read_text(encoding="utf-8"))
+        if configuration["Mode"] == "BehindProxy":
+            print("TLS: managed by the external proxy; application renewal skipped.")
+            return
+        ensure_certificate(configuration["Domain"])
 
 
 if __name__ == "__main__":
