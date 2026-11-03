@@ -32,23 +32,28 @@
     <main>
         <section class="intro" aria-labelledby="page-title">
             <h1 id="page-title" data-i18n="title">上传日志</h1>
-            <p class="intro-copy"><span data-i18n="recipientBefore">文件将交给作者</span> <strong id="author-name"></strong><span data-i18n="recipientAfter">，用于排查 Mod 问题。</span></p>
-            <p class="supported-line"><span data-i18n="supported">当前支持：</span><span id="supported-games"></span></p>
+            <p class="intro-copy"><span data-i18n="recipientBefore">发送给</span> <strong id="author-name"></strong></p>
+            <aside class="supported-sidebar">
+                <details id="supported-games-panel">
+                    <summary data-i18n="supported">支持的游戏</summary>
+                    <ul id="supported-games"></ul>
+                </details>
+            </aside>
         </section>
 
         <noscript><p class="notice">请启用 JavaScript 以使用文件选择和语言切换。Please enable JavaScript to use this page.</p></noscript>
 
         <section class="route-section" aria-labelledby="route-title">
-            <h2 id="route-title" class="section-heading" data-i18n="chooseRoute">选择方式</h2>
+            <h2 id="route-title" class="visually-hidden" data-i18n="chooseRoute">选择方式</h2>
             <div class="route-options" role="group" aria-labelledby="route-title">
                 <button type="button" class="route-card selected" id="route-auto" aria-pressed="true" aria-controls="auto-panel">
                     <span class="route-symbol" aria-hidden="true">⌕</span>
-                    <span class="route-text"><strong data-i18n="autoTitle">自动选择日志</strong><span data-i18n="autoDescription">选择游戏文件夹，自动查找日志</span></span>
+                    <span class="route-text"><strong data-i18n="autoTitle">自动选择日志</strong></span>
                     <span class="choice-dot" aria-hidden="true"></span>
                 </button>
                 <button type="button" class="route-card" id="route-manual" aria-pressed="false" aria-controls="manual-panel">
                     <span class="route-symbol" aria-hidden="true">↥</span>
-                    <span class="route-text"><strong data-i18n="manualTitle">手动选择日志</strong><span data-i18n="manualDescription">按下面的说明，找到文件后发送</span></span>
+                    <span class="route-text"><strong data-i18n="manualTitle">手动选择日志</strong></span>
                     <span class="choice-dot" aria-hidden="true"></span>
                 </button>
             </div>
@@ -57,22 +62,23 @@
         <div class="workspace">
             <section id="auto-panel" aria-labelledby="auto-heading">
                 <div id="automatic-source">
-                    <div class="step-heading"><span class="step-number">1</span><div><h2 id="auto-heading" data-i18n="folderHeading">打开游戏本地文件</h2><p data-i18n="folderDescription">在 Steam 中右键游戏 → 管理 → 浏览本地文件。</p><p data-i18n="dragInstruction">在打开的窗口中选择全部文件，拖入右侧窗口。</p><p data-i18n="oneFolder">（也可以回到上一级目录并选择游戏文件夹）</p></div></div>
+                    <div class="step-heading"><span class="step-number">1</span><div><h2 id="auto-heading" data-i18n="folderHeading">打开游戏本地文件</h2><p data-i18n="folderDescription">Steam 中右键游戏 → 管理 → 浏览本地文件。</p><p id="drag-instruction">全选文件，拖入右侧区域。</p></div></div>
                     <div class="guide-layout">
                         <div id="automatic-guide" class="guide-images" hidden></div>
                         <div class="guide-actions">
                             <div id="folder-drop" class="drop-zone">
                                 <span class="folder-icon" aria-hidden="true"></span>
-                                <h3 data-i18n="dropFolder">把游戏文件夹里的内容拖到这里</h3>
+                                <h3 data-i18n="dropFolder">拖到这里</h3>
                                 <button type="button" class="primary-button" id="choose-folder" data-i18n="chooseFolder">选择游戏文件夹</button>
                                 <input id="folder-input" type="file" webkitdirectory hidden />
-                                <span class="drop-note" data-i18n="folderPrivacy">只发送需要的日志和配置，不会上传整个游戏。</span>
+                                <span class="drop-note" data-i18n="folderPrivacy">仅上传匹配的日志和配置</span>
                             </div>
                             <p id="folder-status" class="status" role="status" aria-live="polite"></p>
+                            <p id="auto-size-error" class="status error" role="status" aria-live="polite" hidden></p>
                             <div id="auto-selection-slot" class="selection-slot">
                                 <section id="selection-section" class="selection-section" hidden aria-labelledby="selection-title">
                                     <div id="detected-game-info" class="detected-game-info" hidden></div>
-                                    <div class="selection-heading"><h3 id="selection-title" data-i18n="selectedFiles">已选择的文件</h3><span id="selection-summary"></span></div>
+                                    <div class="selection-heading"><h3 id="selection-title" class="visually-hidden" data-i18n="selectedFiles">已选择的文件</h3><span id="selection-summary"></span></div>
                                     <ul id="selected-files" class="file-list"></ul>
                                     <p id="missing-files" class="hint"></p>
                                 </section>
@@ -91,16 +97,21 @@
                 </fieldset>
                 <div id="game-guide" class="guide-layout manual-guide-layout" hidden>
                     <div class="step-heading manual-upload-heading"><span class="step-number">2</span><div><h2 data-i18n="uploadHeading">上传日志</h2></div></div>
-                    <div class="guide-box"><h3 data-i18n="guideHeading">文件位置</h3><ol id="guide-steps"></ol></div>
+                    <div class="guide-box"><ol id="guide-steps"></ol></div>
                     <div class="guide-actions">
                         <div id="expected-files" class="expected-files"></div>
+                        <details id="optional-files" class="optional-files" hidden>
+                            <summary data-i18n="otherFiles">其他文件</summary>
+                            <div id="optional-file-paths"></div>
+                            <ol id="optional-guide-steps"></ol>
+                        </details>
                         <div class="drop-zone compact" id="file-drop">
-                            <h3 data-i18n="dropFiles">把找到的日志和配置文件拖到这里</h3>
-                            <p data-i18n="multipleFiles">可以选择多个文件，也可以分多次添加。</p>
-                            <button type="button" class="primary-button" id="choose-files" data-i18n="chooseFiles">选择日志和配置文件</button>
+                            <h3 data-i18n="dropFiles">拖入日志文件</h3>
+                            <button type="button" class="primary-button" id="choose-files" data-i18n="chooseFiles">选择文件</button>
                             <input id="file-input" type="file" multiple hidden />
                         </div>
                         <p id="manual-status" class="status" role="status" aria-live="polite"></p>
+                        <p id="manual-size-error" class="status error" role="status" aria-live="polite" hidden></p>
                         <div id="manual-selection-slot" class="selection-slot"></div>
                     </div>
                 </div>
@@ -108,15 +119,14 @@
 
             <div id="upload-next-steps">
                 <section class="identity-section" aria-labelledby="nickname-heading">
-                    <div class="step-heading"><span class="step-number" id="nickname-step-number">2</span><div><h2 id="nickname-heading" data-i18n="nicknameHeading">填写昵称</h2></div></div>
+                    <div class="step-heading"><span class="step-number" id="nickname-step-number">2</span><h2 id="nickname-heading"><label for="nickname" data-i18n="nicknameHeading">输入昵称</label></h2></div>
                     <div id="nickname-target" class="attention-target nickname-target">
                         <span class="attention-arrow" aria-hidden="true">⬇</span>
-                        <label for="nickname" class="nickname-input-label" data-i18n="nicknameInputLabel">输入昵称：</label>
-                        <input id="nickname" name="nickname" type="text" maxlength="60" autocomplete="off" spellcheck="false" required placeholder="能分辨上传者即可，N站来的就填N站id" />
+                        <input id="nickname" name="nickname" type="text" maxlength="60" autocomplete="off" spellcheck="false" required placeholder="Nexus ID 或常用昵称" />
                     </div>
                 </section>
 
-                <div class="send-section"><p id="upload-limits" class="hint"></p><div id="send-target" class="attention-target"><span class="attention-arrow" aria-hidden="true">⬇</span><button type="button" id="send-files" class="send-button" disabled>发送文件</button></div></div>
+                <div class="send-section"><div id="send-target" class="attention-target"><span class="attention-arrow" aria-hidden="true">⬇</span><button type="button" id="send-files" class="send-button" disabled>发送文件</button></div></div>
             </div>
             <progress id="upload-progress" max="100" value="0" hidden></progress>
             <p id="upload-status" class="status" role="status" aria-live="polite"></p>

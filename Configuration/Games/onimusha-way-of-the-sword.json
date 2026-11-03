@@ -22,10 +22,12 @@
       ]
     },
     {
+      "isOptional": true,
       "zh": "在游戏文件夹中选中 re2_fw_config.txt，拖入日志上传区域。（只有作者要求时才需要上传）",
       "en": "Select re2_fw_config.txt in the game folder and drag it into the log upload area. (Only upload if the author requests it)"
     },
     {
+      "isOptional": true,
       "zh": "在游戏文件夹中选中 reframework_crash.dmp，拖入日志上传区域。（只有作者要求时才需要上传）",
       "en": "Select reframework_crash.dmp in the game folder and drag it into the log upload area. (Only upload if the author requests it)"
     }

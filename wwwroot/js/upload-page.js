@@ -11,13 +11,12 @@
             title: "上传日志",
             guideImageOpen: "点击放大", guideImageUnavailable: "演示图片暂时无法加载，请按文字指引操作。",
             automaticGuideAlt: "操作示例：从 Steam 打开游戏目录，鼠标框选全部内容（也可按 Ctrl+A），再拖入上传区域。",
-            recipientBefore: "文件将交给作者", recipientAfter: "，用于排查 Mod 问题。",
-            chooseRoute: "选择方式", autoTitle: "自动选择日志", autoDescription: "选择游戏文件夹，自动查找日志",
-            manualTitle: "手动选择日志", manualDescription: "按下面的说明，找到文件后发送",
-            folderHeading: "打开游戏本地文件", folderDescription: "在 Steam 中右键游戏 → 管理 → 浏览本地文件。",
-            dragInstruction: "在打开的窗口中选择全部文件，拖入右侧窗口。",
-            dropFolder: "把游戏文件夹里的内容拖到这里", oneFolder: "（也可以回到上一级目录并选择游戏文件夹）", chooseFolder: "选择游戏文件夹",
-            folderPrivacy: "只发送需要的日志和配置，不会上传整个游戏。", supported: "当前支持：",
+            recipientBefore: "发送给",
+            chooseRoute: "选择方式", autoTitle: "自动选择日志", manualTitle: "手动选择日志",
+            folderHeading: "打开游戏本地文件", folderDescription: "Steam 中右键游戏 → 管理 → 浏览本地文件。",
+            dragInstruction: "全选文件，拖入右侧区域。", dragInstructionBelow: "全选文件，拖入下方区域。",
+            dropFolder: "拖到这里", chooseFolder: "选择游戏文件夹",
+            folderPrivacy: "仅上传匹配的日志和配置", supported: "支持的游戏",
             identifying: "正在识别游戏… 文件不会发送。", droppedContents: "拖入的内容",
             detectedGame: "已识别游戏", multipleGames: "识别到多个游戏，请只拖入一个游戏的安装文件夹，或使用手动选择日志。",
             gameNotFound: "没有识别到支持的游戏。请从 Steam 打开本地文件后全选拖入，确保包含游戏程序，或使用手动上传。",
@@ -25,19 +24,19 @@
             cancelScan: "取消查找", autoHelp: "请确认选择的是游戏安装文件夹。日志可能尚未生成，也可能位于所选目录之外。",
             viewManual: "查看手动查找指引 →", gameHeading: "选择游戏",
             uploadHeading: "上传日志", chooseGame: "请选择游戏", noGames: "暂未配置支持的游戏", guideHeading: "文件位置", demo: "演示", demoOnly: "此游戏仅用于展示控件，不提供文件上传。",
-            dropFiles: "把找到的日志和配置文件拖到这里", multipleFiles: "可以选择多个文件，也可以分多次添加。",
-            primaryFile: "必须上传", secondaryFile: "次要", secondaryNote: "（只有作者要求时才需要上传）",
+            dropFiles: "拖入日志文件", otherFiles: "其他文件", gameFolder: "游戏目录",
+            primaryFile: "必需", secondaryNote: "（只有作者要求时才需要上传）",
             missingRequired: "请先添加必须上传的日志。", missingPrimary: "还需要添加 {names}。",
-            chooseFiles: "选择日志和配置文件", selectedFiles: "已选择的文件",
-            nicknameHeading: "填写昵称",
-            nicknameInputLabel: "输入昵称：",
-            nicknamePlaceholder: "能分辨上传者即可，N站来的就填N站id",
+            chooseFiles: "选择文件", selectedFiles: "已选择的文件",
+            nicknameHeading: "输入昵称",
+            nicknamePlaceholder: "Nexus ID 或常用昵称",
             send: "发送给 {author}", sent: "已保存",
-            limits: "单个文件不超过 {file}，一次提交合计不超过 {total}。",
+            fileTooLarge: "{name} 为 {size}，超过单个文件限制 {limit}。",
+            totalTooLarge: "文件合计 {size}，超过总大小限制 {limit}。",
             preparing: "正在检查文件…", uploading: "正在上传… {percent}%", saving: "正在发送…",
             success: "发送成功！", receiptHint: "告诉作者，你填写的昵称是：",
             invalidNickname: "请填写有效昵称（最多 60 个字符）。", noFiles: "请先选择要发送的文件。",
-            tooLarge: "文件超过大小限制，请按页面上的限制重新选择。", oneGame: "一次只能提交一个游戏的文件，请选择具体的游戏目录。",
+            tooLarge: "文件超出上传限制（单个 {file}，合计 {total}）。请刷新页面后重新选择。", oneGame: "一次只能提交一个游戏的文件，请选择具体的游戏目录。",
             siteBusy: "网站暂时繁忙，请稍后重试。已选择的文件和昵称仍然保留。",
             busy: "当前上传人数较多，请稍后再试。", storageFull: "暂时没有足够的存储空间，请稍后再试或联系作者。",
             storageFailed: "未能确认保存成功，请联系作者确认后再重试。", invalidSubmission: "提交内容不完整或不符合要求，请重新选择文件。",
@@ -45,7 +44,7 @@
             incompleteUpload: "文件未完整接收或校验未通过，本次提交未保存，请重试。", refreshPage: "页面已过期，请刷新页面后重新选择文件。",
             unknownResult: "连接中断，无法确认是否保存成功。请先联系作者核实，避免重复提交。",
             readFailed: "无法读取所选文件，请重新选择后再试。", secureRequired: "请通过 HTTPS 打开本站后再上传文件。",
-            log: "日志", config: "配置", copy: "复制路径", copied: "已复制", copyFailed: "无法复制，请选中路径手动复制。",
+            copy: "复制目录", copied: "已复制", copyFailed: "无法复制，请选中路径手动复制。",
             scanning: "正在检查 {folder}… 文件不会发送。", found: "找到日志了！",
             notFound: "在 {folder} 中没有找到诊断文件。请按手动指引检查日志位置。", folderOnly: "请拖入整个游戏文件夹，或全选游戏文件夹里的内容一起拖入。",
             folderUnsupported: "此浏览器不支持拖入文件夹，请使用「选择文件夹」按钮。",
@@ -54,20 +53,19 @@
             tooMany: "所选目录包含过多项目，请选择具体的游戏安装文件夹。", summary: "{count} 个文件 · {size}",
             missing: "尚未找到：{names}。缺少文件也可以保留已有选择。",
             manualAdded: "已添加 {count} 个文件。", manualRejected: "该文件不是该游戏所需的日志。",
-            manualPartiallyAdded: "已添加 {count} 个文件；其余文件不是该游戏所需的日志。",
+            manualPartiallyAdded: "部分文件不是该游戏所需的日志。",
             filesOnly: "请添加文件，不要添加文件夹。", pickGameFirst: "请先选择游戏。", selected: "已添加", notSelected: "尚未添加"
         },
         en: {
             title: "Upload logs",
             guideImageOpen: "View full size", guideImageUnavailable: "The guide image could not load. Please follow the written steps.",
             automaticGuideAlt: "Example: open your game's folder from Steam, drag a selection box around all items (or press Ctrl+A), then drag them into the upload area.",
-            recipientBefore: "Files will be sent to the author", recipientAfter: " to troubleshoot your mod issue.",
-            chooseRoute: "Choose a method", autoTitle: "Select logs automatically", autoDescription: "Choose your game folder to find logs automatically",
-            manualTitle: "Select logs manually", manualDescription: "Follow the instructions below to find and send your files",
+            recipientBefore: "Send to",
+            chooseRoute: "Choose a method", autoTitle: "Select logs automatically", manualTitle: "Select logs manually",
             folderHeading: "Open your game's local files", folderDescription: "In Steam, right-click the game → Manage → Browse local files.",
-            dragInstruction: "Select all files in the window that opens, then drag them into the area on the right.",
-            dropFolder: "Drop the contents of your game folder here", oneFolder: "(You can also go up one level and select the game folder.)", chooseFolder: "Choose game folder",
-            folderPrivacy: "Only the logs and settings we need will be sent, not the whole game.", supported: "Currently supported: ",
+            dragInstruction: "Select all files and drag them into the area on the right.", dragInstructionBelow: "Select all files and drag them into the area below.",
+            dropFolder: "Drop here", chooseFolder: "Choose game folder",
+            folderPrivacy: "Only matching logs and settings are uploaded", supported: "Supported games",
             identifying: "Identifying your game… Nothing will be sent.", droppedContents: "the dropped items",
             detectedGame: "Detected game", multipleGames: "Multiple games were found. Drop the installation folder for just one game, or select logs manually.",
             gameNotFound: "No supported game was identified. Open local files from Steam and drag all contents, including the game executable, or choose files manually.",
@@ -75,19 +73,19 @@
             cancelScan: "Cancel search", autoHelp: "Check that you selected the game’s installation folder. Logs may not exist yet, or may be outside this folder.",
             viewManual: "Show the manual guide →", gameHeading: "Choose your game",
             uploadHeading: "Upload logs", chooseGame: "Choose a game", noGames: "No supported games configured yet", guideHeading: "File locations", demo: "Demo", demoOnly: "This game is a selection preview. File uploads are unavailable.",
-            dropFiles: "Drop your logs and configuration files here", multipleFiles: "Select multiple files, or add them in separate steps.",
-            primaryFile: "Required", secondaryFile: "Secondary", secondaryNote: "(Only upload if the author requests it)",
+            dropFiles: "Drop log files here", otherFiles: "Other files", gameFolder: "Game folder",
+            primaryFile: "Required", secondaryNote: "(Only upload if the author requests it)",
             missingRequired: "Please add the required logs first.", missingPrimary: "Please also add {names}.",
-            chooseFiles: "Choose logs and settings", selectedFiles: "Selected files",
+            chooseFiles: "Choose files", selectedFiles: "Selected files",
             nicknameHeading: "Enter your nickname",
-            nicknameInputLabel: "Nickname:",
-            nicknamePlaceholder: "Use a name that identifies you. If you're from Nexus Mods, enter your Nexus Mods ID.",
+            nicknamePlaceholder: "Nexus ID or usual nickname",
             send: "Send to {author}", sent: "Saved",
-            limits: "Up to {file} per file and {total} per submission.",
+            fileTooLarge: "{name} is {size}, exceeding the {limit} per-file limit.",
+            totalTooLarge: "Files total {size}, exceeding the {limit} total limit.",
             preparing: "Checking files…", uploading: "Uploading… {percent}%", saving: "Sending…",
             success: "Files sent!", receiptHint: "Tell the author the nickname you used:",
             invalidNickname: "Enter a valid nickname (up to 60 characters).", noFiles: "Choose files to send first.",
-            tooLarge: "Your files exceed the size limits shown on this page. Please choose again.", oneGame: "Submit files for one game at a time. Choose a specific game folder.",
+            tooLarge: "Upload limit exceeded ({file} per file, {total} total). Refresh the page and choose again.", oneGame: "Submit files for one game at a time. Choose a specific game folder.",
             siteBusy: "The website is busy. Please try again later. Your selected files and nickname have been kept.",
             busy: "Too many uploads are in progress. Please try again shortly.", storageFull: "There is not enough storage available. Try later or contact the author.",
             storageFailed: "We could not confirm the files were saved. Check with the author before retrying.", invalidSubmission: "The submission is incomplete or invalid. Please select your files again.",
@@ -95,7 +93,7 @@
             incompleteUpload: "The files were incomplete or failed verification. This submission was not saved. Please retry.", refreshPage: "This page has expired. Refresh it and select your files again.",
             unknownResult: "The connection was interrupted. We cannot confirm whether your files were saved. Check with the author before retrying to avoid duplicates.",
             readFailed: "Could not read the selected files. Please select them again.", secureRequired: "Open this website over HTTPS to upload files.",
-            log: "Log", config: "Settings", copy: "Copy path", copied: "Copied", copyFailed: "Could not copy. Select the path and copy it manually.",
+            copy: "Copy folder", copied: "Copied", copyFailed: "Could not copy. Select the path and copy it manually.",
             scanning: "Checking {folder}… Nothing will be sent.", found: "Found your logs!",
             notFound: "No diagnostic files were found in {folder}. Check the locations in the manual guide.", folderOnly: "Drop the whole game folder, or select and drop all of its contents together.",
             folderUnsupported: "This browser cannot read dropped folders. Use the Choose folder button instead.",
@@ -104,7 +102,7 @@
             tooMany: "This folder contains too many items. Choose the specific game installation folder.", summary: "{count} files · {size}",
             missing: "Not found yet: {names}. You can keep the files you already selected.",
             manualAdded: "Added {count} files.", manualRejected: "This file is not a log required for this game.",
-            manualPartiallyAdded: "Added {count} files. The remaining files are not logs required for this game.",
+            manualPartiallyAdded: "Some files are not logs required for this game.",
             filesOnly: "Please add files, not folders.", pickGameFirst: "Please choose a game first.", selected: "Added", notSelected: "Not added"
         }
     };
@@ -146,7 +144,6 @@
         sending: false, submitted: false, uploadStatus: null, receipt: null, receiptNickname: "", progress: null
     };
     const local = value => value[state.language] || value.en;
-    const gameName = game => state.language === "zh" ? `${game.name.zh} / ${game.name.en}` : game.name.en;
     const text = (key, args = {}) => (messages[state.language][key] || key).replace(/\{(\w+)\}/g, (_, name) => args[name] ?? "");
     const sizeText = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
     const make = (tag, className, value) => { const element = document.createElement(tag); element.className = className; if (value !== undefined) element.textContent = value; return element; };
@@ -246,6 +243,26 @@
         }, { threshold: 0.75 });
         for (const id of ["nickname-target", "send-target"]) attentionObserver.observe($(id));
     }
+    function sizeErrors(files) {
+        const errors = files.filter(record => record.file.size > config.maxFileBytes).map(record => text("fileTooLarge", {
+            name: record.file.name, size: sizeText(record.file.size), limit: sizeText(config.maxFileBytes)
+        }));
+        const total = files.reduce((sum, record) => sum + record.file.size, 0);
+        if (total > config.maxSubmissionBytes) errors.push(text("totalTooLarge", { size: sizeText(total), limit: sizeText(config.maxSubmissionBytes) }));
+        return errors;
+    }
+    function renderSizeErrors() {
+        for (const route of ["auto", "manual"]) {
+            const errors = sizeErrors(state[route + "Files"]);
+            if (route === state.route && state.uploadStatus?.key === "tooLarge" && !errors.length)
+                errors.push(text("tooLarge", { file: sizeText(config.maxFileBytes), total: sizeText(config.maxSubmissionBytes) }));
+            const element = $(route + "-size-error");
+            element.textContent = errors.join("\n");
+            element.hidden = !errors.length;
+            // A success message must not compete with an actionable size error.
+            $(route === "auto" ? "folder-status" : "manual-status").hidden = errors.length > 0 && !state[route + "Status"]?.error;
+        }
+    }
     function validationError() {
         const files = currentFiles();
         const nickname = $("nickname").value.trim();
@@ -256,9 +273,8 @@
         }
         if (!files.length) return "noFiles";
         if (new Set(files.map(record => record.game.id)).size !== 1) return "oneGame";
+        if (sizeErrors(files).length) return "tooLarge";
         if (!nickname || nickname.length > 60 || /[\u0000-\u001f\u007f-\u009f]/.test(nickname)) return "invalidNickname";
-        if (files.some(record => record.file.size > config.maxFileBytes)
-            || files.reduce((sum, record) => sum + record.file.size, 0) > config.maxSubmissionBytes) return "tooLarge";
         return null;
     }
     function renderUpload() {
@@ -267,11 +283,11 @@
         button.textContent = state.sending ? text(state.progress === null ? "preparing" : state.progress === 100 ? "saving" : "uploading", { percent: state.progress || 0 })
             : state.submitted ? text("sent") : text("send", { author: config.authorName });
         // Require a nickname before sending; other validation errors can still explain how to fix the selection.
-        button.disabled = !$("nickname").value.trim() || state.sending || state.scanning || state.submitted || invalid === "demoOnly" || invalid === "missingRequired" || (state.route === "auto" && !state.recognizedGame);
-        $("upload-limits").textContent = text("limits", { file: sizeText(config.maxFileBytes), total: sizeText(config.maxSubmissionBytes) });
+        button.disabled = !$("nickname").value.trim() || state.sending || state.scanning || state.submitted || invalid === "noFiles" || invalid === "tooLarge" || invalid === "demoOnly" || invalid === "missingRequired" || (state.route === "auto" && !state.recognizedGame);
+        renderSizeErrors();
         const status = state.uploadStatus;
-        $("upload-status").textContent = status ? (status.key === "success" ? "" : text(status.key, status.args)) : (invalid === "tooLarge" || invalid === "oneGame" ? text(invalid) : "");
-        $("upload-status").classList.toggle("error", Boolean(status ? status.error : invalid === "tooLarge" || invalid === "oneGame"));
+        $("upload-status").textContent = status ? (["success", "tooLarge"].includes(status.key) ? "" : text(status.key, status.args)) : (invalid === "oneGame" ? text(invalid) : "");
+        $("upload-status").classList.toggle("error", Boolean(status ? status.error : invalid === "oneGame"));
         $("upload-progress").hidden = !state.sending || state.progress === null;
         $("upload-progress").value = state.progress || 0;
         $("upload-progress").setAttribute("aria-label", text("uploading", { percent: state.progress || 0 }));
@@ -298,7 +314,7 @@
         for (const route of ["auto", "manual"]) {
             const status = state[route + "Status"];
             const element = $(route === "auto" ? "folder-status" : "manual-status");
-            element.textContent = status ? text(status.key, { ...status.args, folder: status.args.folder === "" ? text("droppedContents") : status.args.folder }) : "";
+            element.textContent = status && status.key !== "manualAdded" ? text(status.key, { ...status.args, folder: status.args.folder === "" ? text("droppedContents") : status.args.folder }) : "";
             element.classList.toggle("error", Boolean(status && status.error));
             element.classList.toggle("recognition-success", route === "auto" && status?.key === "found" && !status.error);
         }
@@ -347,10 +363,54 @@
             image.referrerPolicy = "no-referrer";
             const error = make("span", "guide-image-error", text("guideImageUnavailable"));
             error.hidden = true;
-            image.addEventListener("error", () => { image.hidden = true; error.hidden = false; caption.style.visibility = "hidden"; link.removeAttribute("href"); });
+            image.addEventListener("error", () => { image.hidden = true; error.hidden = false; expand.hidden = true; link.removeAttribute("href"); });
             image.src = url; frame.append(image, error); link.append(frame);
-            const caption = make("span", "guide-image-caption", text("guideImageOpen"));
-            link.append(caption); figure.append(link); container.append(figure);
+            const expand = make("span", "guide-image-expand", "⛶");
+            expand.setAttribute("aria-hidden", "true");
+            link.title = text("guideImageOpen");
+            link.append(expand); figure.append(link); container.append(figure);
+        }
+    }
+    function fileGroups(files) {
+        const groups = new Map();
+        for (const item of files) {
+            for (const path of item.paths) {
+                const parts = path.replace(/\\/g, "/").split("/");
+                const name = parts.pop();
+                const directory = parts.join("\\");
+                if (!groups.has(directory)) groups.set(directory, []);
+                groups.get(directory).push({ item, name });
+            }
+        }
+        return groups;
+    }
+    function renderFileGroups(container, groups, sharedDirectory = null) {
+        container.replaceChildren();
+        for (const [directory, files] of groups) {
+            const group = make("div", "file-directory-group");
+            if (directory !== sharedDirectory) {
+                const pathRow = make("div", "path-row");
+                pathRow.append(make(directory ? "code" : "span", "directory-name", directory || text("gameFolder")));
+                if (directory) {
+                    const button = make("button", "copy-button", text("copy"));
+                    button.type = "button";
+                    button.setAttribute("aria-label", `${text("copy")}: ${directory}`);
+                    button.addEventListener("click", async () => {
+                        try { await navigator.clipboard.writeText(directory); button.textContent = text("copied"); }
+                        catch { setStatus("manual", "copyFailed", {}, true); }
+                    });
+                    pathRow.append(button);
+                }
+                group.append(pathRow);
+            }
+            for (const { item, name } of files) {
+                const row = make("div", "expected-file-heading");
+                row.append(make("strong", "", name));
+                if (item.isPrimary) row.append(make("span", "kind-badge primary-file-badge", text("primaryFile")));
+                if (state.manualFiles.some(file => file.item.id === item.id)) row.append(make("span", "kind-badge", text("selected")));
+                group.append(row);
+            }
+            container.append(group);
         }
     }
     function renderGuide() {
@@ -359,41 +419,35 @@
         $("game-guide").hidden = !game;
         $("expected-files").replaceChildren();
         const steps = $("guide-steps");
+        const optionalSteps = $("optional-guide-steps");
+        const optionalPanel = $("optional-files");
+        optionalPanel.hidden = !game || (!game.files.some(item => !item.isPrimary) && !game.instructions.some(step => step.isOptional));
+        if (optionalPanel.dataset.game !== (game?.id || "")) {
+            optionalPanel.open = false;
+            optionalPanel.dataset.game = game?.id || "";
+        }
         const guideKey = JSON.stringify([game?.id, state.language]);
         if (steps.dataset.guideKey !== guideKey) {
             steps.dataset.guideKey = guideKey;
             steps.replaceChildren();
+            optionalSteps.replaceChildren();
             for (const instruction of game?.instructions || []) {
                 const step = make("li", "guide-step");
                 step.append(make("p", "guide-step-text", local(instruction)));
                 const media = make("div", "guide-images");
                 renderGuideImages(media, instruction.imageUrls || [], local(instruction));
-                step.append(media); steps.append(step);
+                step.append(media); (instruction.isOptional ? optionalSteps : steps).append(step);
             }
+            if (game?.files.some(item => !item.isPrimary) && !game.instructions.some(step => step.isOptional))
+                optionalSteps.append(make("li", "guide-step", text("secondaryNote")));
         }
         if (!game) return;
-        for (const item of [...game.files].sort((a, b) => Number(Boolean(b.isPrimary)) - Number(Boolean(a.isPrimary)))) {
-            const row = make("div", "expected-file");
-            const heading = make("div", "expected-file-heading");
-            heading.append(make("strong", "", local(item.name)), make("span", "kind-badge", text(item.kind)),
-                make("span", item.isPrimary ? "kind-badge primary-file-badge" : "kind-badge", text(item.isPrimary ? "primaryFile" : "secondaryFile")));
-            if (!item.isPrimary) heading.append(make("span", "secondary-file-note", text("secondaryNote")));
-            if (state.manualFiles.some(file => file.item.id === item.id)) heading.append(make("span", "kind-badge", text("selected")));
-            row.append(heading);
-            for (const path of item.paths) {
-                const pathRow = make("div", "path-row");
-                const button = make("button", "copy-button", text("copy"));
-                button.type = "button";
-                button.setAttribute("aria-label", `${text("copy")}: ${path}`);
-                button.addEventListener("click", async () => {
-                    try { await navigator.clipboard.writeText(path.replace(/\//g, "\\")); button.textContent = text("copied"); }
-                    catch { setStatus("manual", "copyFailed", {}, true); }
-                });
-                pathRow.append(make("code", "", path.replace(/\//g, "\\")), button);
-                row.append(pathRow);
-            }
-            $("expected-files").append(row);
-        }
+        const primary = fileGroups(game.files.filter(item => item.isPrimary));
+        const secondary = fileGroups(game.files.filter(item => !item.isPrimary));
+        renderFileGroups($("expected-files"), primary);
+        // A single shared folder is already shown immediately above the disclosure.
+        const shared = primary.size === 1 && secondary.size === 1 ? primary.keys().next().value : null;
+        renderFileGroups($("optional-file-paths"), secondary, shared);
     }
     function renderSelection() {
         const files = currentFiles();
@@ -407,7 +461,7 @@
         for (const record of files) {
             const row = make("li", "");
             const info = make("div", "file-info");
-            info.append(make("strong", "", record.file.name), make("span", "", `${gameName(record.game)} · ${local(record.item.name)}`));
+            info.append(make("strong", "", record.file.name));
             row.append(info, make("span", "file-size", sizeText(record.file.size)));
             $("selected-files").append(row);
         }
@@ -427,9 +481,16 @@
         $("author-name").textContent = config.authorName;
         $("nickname").placeholder = text("nicknamePlaceholder");
         $("nickname-step-number").textContent = state.route === "manual" ? "3" : "2";
+        renderDragInstruction();
         renderGuideImages($("automatic-guide"), config.automaticGuideImages || [], text("automaticGuideAlt"));
         const supported = games.filter(game => !game.isDemo);
-        $("supported-games").textContent = supported.length ? supported.map(gameName).join(" · ") : text("noGames");
+        $("supported-games").replaceChildren();
+        for (const game of supported) {
+            const item = make("li", "");
+            appendGameNames(item, game);
+            $("supported-games").append(item);
+        }
+        if (!supported.length) $("supported-games").append(make("li", "", text("noGames")));
         renderGameCards("game-cards", games.map(game => ({ game, value: game.id })), "manual-game", state.manualGame, value => {
             clearAttention(); resetUpload(); state.manualGame = value; state.manualFiles = []; state.manualStatus = null;
             savePreference("game", value);
@@ -478,7 +539,7 @@
         const game = games.find(game => game.id === state.manualGame);
         if (!game) { setStatus("manual", "pickGameFirst", {}, true); return; }
         if (game.isDemo) { setStatus("manual", "demoOnly", {}, true); return; }
-        const hadFiles = state.manualFiles.length > 0;
+        const wasReady = state.manualFiles.length > 0 && !sizeErrors(state.manualFiles).length && validationError() !== "missingRequired";
         let count = 0, ignored = 0;
         for (const file of files) {
             const item = rules.matchManualFile(game, file.name);
@@ -489,7 +550,7 @@
         const message = ignored ? (count > 0 ? "manualPartiallyAdded" : "manualRejected") : "manualAdded";
         setStatus("manual", message, { count }, ignored > 0);
         renderGuide(); renderSelection();
-        if (count > 0 && !hadFiles) showNextStepHints();
+        if (count > 0 && !wasReady && !sizeErrors(state.manualFiles).length && validationError() !== "missingRequired") showNextStepHints();
     }
     $("file-input").addEventListener("change", event => { addManualFiles(Array.from(event.target.files)); event.target.value = ""; });
     function clearAutomatic() {
@@ -526,7 +587,7 @@
             state.autoHelp = !records.length;
             setStatus("auto", records.length ? "found" : "notFound", { folder: source.folder, count: records.length }, !records.length);
             renderSelection();
-            if (records.length) showNextStepHints();
+            if (records.length && !sizeErrors(records).length) showNextStepHints();
         } catch (error) { failScan(token, error); }
     }
     function failScan(token, error) {
@@ -636,5 +697,14 @@
         } catch { uploadStatus("readFailed", {}, true); }
         finally { state.sending = false; renderUpload(); }
     });
+    const wideViewport = matchMedia("(min-width: 1600px)");
+    const stackedGuide = matchMedia("(max-width: 899px)");
+    function renderDragInstruction() {
+        $("drag-instruction").textContent = text(stackedGuide.matches ? "dragInstructionBelow" : "dragInstruction");
+    }
+    function positionSupportedGames() { $("supported-games-panel").open = wideViewport.matches; }
+    wideViewport.addEventListener("change", positionSupportedGames);
+    stackedGuide.addEventListener("change", renderDragInstruction);
+    positionSupportedGames();
     render();
 })();

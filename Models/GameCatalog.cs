@@ -10,7 +10,7 @@ public sealed class UploadPageOptions
 }
 
 public sealed record LocalizedText(string Zh, string En);
-public sealed record GuideInstruction(string Zh, string En, string[]? Images = null)
+public sealed record GuideInstruction(string Zh, string En, string[]? Images = null, bool IsOptional = false)
 {
     public LocalizedText[] ImageUrls { get; init; } = [];
 }

@@ -15,6 +15,7 @@
       "images": ["guides/navigate-palworld-ue4ss-log-{lang}.gif"]
     },
     {
+      "isOptional": true,
       "zh": "在日志所在文件夹中选中 UE4SS-settings.ini，拖入日志上传区域。（只有作者要求时才需要上传）",
       "en": "Select UE4SS-settings.ini in the same folder as the log and drag it into the log upload area. (Only upload if the author requests it)"
     }
