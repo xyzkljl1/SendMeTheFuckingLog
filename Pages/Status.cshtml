@@ -26,9 +26,9 @@
         @if (!Model.Requests.PersistenceHealthy) { <span class="badge error">@Model.T("计数保存异常 · 503", "Counter persistence error · 503")</span> }
         else if (Model.Requests.Limited) { <span class="badge warning">@Model.T("已达到限额 · 429", "Limit reached · 429")</span> }
         else { <span class="badge">@Model.T("正常", "Normal")</span> }</div>
-        <table><thead><tr><th>@Model.T("滚动窗口", "Rolling window")</th><th>@Model.T("已使用 / 上限", "Used / Limit")</th><th>@Model.T("剩余", "Remaining")</th></tr></thead><tbody>
+        <table><thead><tr><th>@Model.T("滚动窗口", "Rolling window")</th><th>@Model.T("已使用 / 上限", "Used / Limit")</th></tr></thead><tbody>
         @foreach (var window in Model.Requests.Windows)
-        { <tr><td>@window.Hours @Model.T("小时", "hours")</td><td>@window.Used.ToString("N0") / @window.Limit.ToString("N0")<progress max="@window.Limit" value="@window.Used" aria-label="@window.Hours hours"></progress></td><td>@Math.Max(0, window.Limit - window.Used).ToString("N0")</td></tr> }
+        { <tr><td>@window.Hours @Model.T("小时", "hours")</td><td>@window.Used.ToString("N0") / @window.Limit.ToString("N0")<progress max="@window.Limit" value="@window.Used" aria-label="@window.Hours hours"></progress></td></tr> }
         </tbody></table>
     </section>
     <section class="card" aria-labelledby="traffic-title">

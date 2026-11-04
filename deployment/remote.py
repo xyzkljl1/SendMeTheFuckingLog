@@ -252,17 +252,6 @@ def check_container(container, run_number):
         raise RuntimeError("A newer workflow has already deployed; refusing stale deployment.")
 
 
-def reset_request_counts():
-    # Called only after the old writer has stopped. Uploads and host traffic state are untouched.
-    for name in (".request-counts.json", ".request-counts.json.new"):
-        path = ROOT / "app" / "data" / name
-        plain(path)
-        if path.exists():
-            if not path.is_file():
-                raise RuntimeError("Request counter path is not a regular file.")
-            path.unlink()
-
-
 def cleanup_images(current_id):
     # Never use system prune, volume prune, or force removal.
     digest_pattern = re.escape(IMAGE) + r"@sha256:[a-f0-9]{64}"
@@ -349,13 +338,13 @@ def main(payload):
             run(*compose, "config", "--quiet")
             if hosting["Mode"] == "BehindProxy":
                 proxy_compose(compose, hosting)
-            # Never clear counters while the old process can checkpoint them again.
+            # Gracefully stop so the old process saves its latest request counts.
+            # The replacement reads the same persisted counts from the data mount.
             run(*compose, "stop", "--timeout", "150", "web", timeout=180)
             stopped = inspect_container()
             if stopped and stopped["State"]["Running"]:
-                raise RuntimeError("Old application is still running; request counters were not reset.")
+                raise RuntimeError("Old application is still running; deployment cannot replace it safely.")
             install_application_configuration(payload["application"])
-            reset_request_counts()
             # No automatic rollback; failed starts leave old images available for investigation.
             run(*compose, "up", "--detach", "--force-recreate", "--no-build", "--pull", "never",
                 "--wait", "--wait-timeout", "120", "web", timeout=180)
