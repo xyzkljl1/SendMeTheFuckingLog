@@ -520,6 +520,7 @@
         document.querySelectorAll("[data-i18n]").forEach(element => { element.textContent = text(element.dataset.i18n); });
         document.querySelectorAll("[data-language]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.language === state.language)));
         $("status-link").href = "/status?lang=" + state.language;
+        $("files-link").href = "/files?lang=" + state.language;
         $("author-name").textContent = config.authorName;
         $("upload-title").textContent = text(state.route === "screenshots" ? "screenshotsPageTitle" : "title");
         $("nickname").placeholder = text("nicknamePlaceholder");

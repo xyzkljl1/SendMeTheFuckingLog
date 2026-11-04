@@ -50,9 +50,11 @@ public sealed class ReverseProxyTests
         using var client = Client(app);
         await app.RefreshAccess();
         client.DefaultRequestHeaders.Add("CF-Connecting-IP", Author);
-        foreach (var handler in new[] { "", "View", "Download" })
+        var urls = new[] { "", "View", "Download" }
+            .Select(handler => $"/files?handler={handler}&submission={id}&name=UE4SS.log")
+            .Append("/status");
+        foreach (var url in urls)
         {
-            var url = $"/files?handler={handler}&submission={id}&name=UE4SS.log";
             client.DefaultRequestHeaders.Remove("X-Forwarded-For");
             client.DefaultRequestHeaders.Add("X-Forwarded-For", Author);
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(url, TestContext.Current.CancellationToken)).StatusCode);
@@ -126,8 +128,13 @@ public sealed class ReverseProxyTests
         var app = world.Start(settings);
         using var client = Client(app, "127.0.0.1");
         app.ClientAddress = IPAddress.Loopback;
+        await app.RefreshAccess();
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/", TestContext.Current.CancellationToken)).StatusCode);
         Assert.Equal(HttpStatusCode.TooManyRequests, (await client.GetAsync("/healthz", TestContext.Current.CancellationToken)).StatusCode);
+        using var denied = await client.GetAsync("/status", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        client.DefaultRequestHeaders.Remove("X-Forwarded-For");
+        client.DefaultRequestHeaders.Add("X-Forwarded-For", Author);
         using var status = await client.GetAsync("/sTaTus?lang=en", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.TooManyRequests, status.StatusCode);
         Assert.Contains("Website status", await status.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));

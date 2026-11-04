@@ -49,6 +49,7 @@ public sealed class RateLimitTests
         await using var world = new TestWorld();
         var app = world.Start(Limits(37, 100, 200));
         using var client = app.Client();
+        await app.RefreshAccess();
         var responses = await Task.WhenAll(Enumerable.Range(0, 100).Select(_ => client.GetAsync("/missing", TestContext.Current.CancellationToken)));
         Assert.Equal(37, responses.Count(response => response.StatusCode == HttpStatusCode.NotFound));
         Assert.Equal(63, responses.Count(response => response.StatusCode == HttpStatusCode.TooManyRequests));

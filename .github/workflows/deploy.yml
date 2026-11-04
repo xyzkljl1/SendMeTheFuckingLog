@@ -155,8 +155,16 @@ jobs:
             exit 1
           fi
           endpoint=$(docker port send-me-the-log-smoke 8080/tcp)
-          for path in / /css/site.css /js/upload-page.js /sTaTus?lang=en; do
+          for path in / /css/site.css /js/upload-page.js; do
             curl --fail --silent --show-error --max-time 10 "http://$endpoint$path" --output /dev/null
+          done
+          # The image has an empty author whitelist until instance configuration is mounted.
+          for path in '/sTaTus?lang=en' /files; do
+            status=$(curl --silent --show-error --max-time 10 --output /dev/null --write-out '%{http_code}' "http://$endpoint$path")
+            if [[ "$status" != 403 ]]; then
+              echo "::error::Expected author-only $path to return 403, received $status."
+              exit 1
+            fi
           done
           docker rm --force send-me-the-log-smoke
 

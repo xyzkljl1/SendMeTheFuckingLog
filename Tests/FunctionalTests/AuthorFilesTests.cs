@@ -14,20 +14,28 @@ public sealed class AuthorFilesTests
             ["AuthorAccess:AllowedClients:1"] = "second.example"
         });
         using var client = app.Client();
+        async Task AssertAccess(HttpStatusCode expected)
+        {
+            foreach (var path in new[] { "/files", "/status" })
+            {
+                using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+                Assert.Equal(expected, response.StatusCode);
+            }
+        }
         await app.RefreshAccess();
-        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/files", TestContext.Current.CancellationToken)).StatusCode);
+        await AssertAccess(HttpStatusCode.OK);
         world.Resolver.Addresses["first.example"] = [IPAddress.Parse("192.0.2.10")];
         await app.RefreshAccess();
-        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/files", TestContext.Current.CancellationToken)).StatusCode);
+        await AssertAccess(HttpStatusCode.Forbidden);
         app.ClientAddress = IPAddress.Parse("192.0.2.10");
-        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/files", TestContext.Current.CancellationToken)).StatusCode);
+        await AssertAccess(HttpStatusCode.OK);
         world.Resolver.Addresses.Remove("first.example");
         await app.RefreshAccess();
-        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/files", TestContext.Current.CancellationToken)).StatusCode);
+        await AssertAccess(HttpStatusCode.Forbidden);
         app.ClientAddress = IPAddress.Parse("2001:db8::1");
-        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/files", TestContext.Current.CancellationToken)).StatusCode);
+        await AssertAccess(HttpStatusCode.OK);
         world.Clock.Advance(TimeSpan.FromMinutes(12));
-        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/files", TestContext.Current.CancellationToken)).StatusCode);
+        await AssertAccess(HttpStatusCode.Forbidden);
     }
 
     [Theory]
@@ -51,14 +59,21 @@ public sealed class AuthorFilesTests
         await app.RefreshAccess();
         client.DefaultRequestHeaders.Add("X-Forwarded-For", "192.0.2.10");
         client.DefaultRequestHeaders.Add("CF-Connecting-IP", "192.0.2.10");
-        using var response = await client.GetAsync("/files", TestContext.Current.CancellationToken);
-        Assert.Equal(status, (int)response.StatusCode);
-        Assert.True(response.Headers.CacheControl!.NoStore);
+        foreach (var path in new[] { "/files", "/status" })
+        {
+            using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+            Assert.Equal(status, (int)response.StatusCode);
+            Assert.True(response.Headers.CacheControl!.NoStore);
+        }
         var config = app.Services.GetRequiredService<IConfiguration>();
         config["AuthorAccess:AllowedClients:0"] = "*";
         config["AuthorAccess:AllowedClients:1"] = "https://invalid.example/path";
         await app.RefreshAccess();
-        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/files", TestContext.Current.CancellationToken)).StatusCode);
+        foreach (var path in new[] { "/files", "/status" })
+        {
+            using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
     }
 
     [Fact]

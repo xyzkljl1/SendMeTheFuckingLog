@@ -3,13 +3,13 @@ namespace FunctionalTests;
 public sealed class StatusTests
 {
     [Fact]
-    public async Task Public_status_shows_folder_counts_without_private_file_names_or_contents_and_paginates()
+    public async Task Authorized_status_shows_folder_counts_without_private_file_names_or_contents_and_paginates()
     {
         await using var world = new TestWorld();
         for (var i = 1; i <= 51; i++) world.SeedSubmission(i, "private contents", "private nickname");
         var app = world.Start();
-        app.ClientAddress = IPAddress.Parse("192.0.2.99");
         using var client = app.Client();
+        await app.RefreshAccess();
         var last = "2026-11-03_120000_phantom-blade-zero_0000000000000033";
         world.Write($"data/{last}.uploading/unfinished.log", "partial");
         using var response = await client.GetAsync("/status?lang=en", TestContext.Current.CancellationToken);
@@ -26,6 +26,43 @@ public sealed class StatusTests
         Assert.Contains("2 / 2", second);
         Assert.Contains("0000000000000001", second);
         Assert.DoesNotContain(last, second);
+    }
+
+    [Theory]
+    [InlineData("GET", false)]
+    [InlineData("HEAD", false)]
+    [InlineData("GET", true)]
+    [InlineData("HEAD", true)]
+    public async Task Status_requires_author_access_even_when_quota_is_exhausted(string method, bool limited)
+    {
+        await using var world = new TestWorld();
+        var id = world.SeedSubmission();
+        var app = world.Start(new() { ["GlobalRateLimit:MaxRequestsPerHour"] = limited ? "1" : "100000" });
+        using var client = app.Client();
+        await app.RefreshAccess();
+        using var home = await client.GetAsync("/", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, home.StatusCode);
+        client.DefaultRequestHeaders.Add("X-Forwarded-For", "127.0.0.1");
+        client.DefaultRequestHeaders.Add("CF-Connecting-IP", "127.0.0.1");
+        foreach (var path in new[] { "/status", "/STATUS/", "/sTaTuS?lang=en&number=2" })
+        {
+            app.ClientAddress = IPAddress.Parse("192.0.2.99");
+            using var denied = await client.SendAsync(new(new HttpMethod(method), path), TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+            Assert.True(denied.Headers.CacheControl!.NoStore);
+            Assert.Equal("text/plain", denied.Content.Headers.ContentType!.MediaType);
+            var body = await denied.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            Assert.DoesNotContain(id, body);
+            Assert.DoesNotContain("<html", body);
+
+            app.ClientAddress = IPAddress.Loopback;
+            using var allowed = await client.SendAsync(new(new HttpMethod(method), path), TestContext.Current.CancellationToken);
+            Assert.Equal(limited ? HttpStatusCode.TooManyRequests : HttpStatusCode.OK, allowed.StatusCode);
+            Assert.True(allowed.Headers.CacheControl!.NoStore);
+        }
+        app.ClientAddress = IPAddress.Parse("192.0.2.99");
+        using var unknownHandler = await client.SendAsync(new(new HttpMethod(method), "/status?handler=unknown"), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Forbidden, unknownHandler.StatusCode);
     }
 
     [Fact]
@@ -62,7 +99,9 @@ public sealed class StatusTests
                 25_000_000_000L, 900_000_000_000L, "2026-11-03", "2026-11");
             world.Write("monitor-status/traffic.json", state == "invalid" ? "broken" : JsonSerializer.Serialize(sample));
         }
-        using var client = world.Start().Client();
+        var app = world.Start();
+        using var client = app.Client();
+        await app.RefreshAccess();
         var html = WebUtility.HtmlDecode(await client.GetStringAsync("/status?lang=en", TestContext.Current.CancellationToken));
         Assert.Contains(expected, html);
         Assert.Contains("1 hours", html);

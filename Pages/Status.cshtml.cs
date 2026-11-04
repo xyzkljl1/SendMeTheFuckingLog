@@ -1,12 +1,15 @@
 using System.Globalization;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using SendMeTheFuckingLog.Hosting;
 using SendMeTheFuckingLog.Monitoring;
 using SendMeTheFuckingLog.Storage;
 
 namespace SendMeTheFuckingLog.Pages;
 
-public sealed class StatusModel(RequestCounter counter, SubmissionStore store, TrafficStatusReader traffic,
+public sealed class StatusModel(AuthorAccess access, RequestCounter counter, SubmissionStore store, TrafficStatusReader traffic,
     ILogger<StatusModel> logger) : PageModel
 {
     public bool English { get; private set; }
@@ -23,11 +26,24 @@ public sealed class StatusModel(RequestCounter counter, SubmissionStore store, T
     public static string MiB(long bytes) => (bytes / 1048576d).ToString("N2", CultureInfo.InvariantCulture) + " MiB";
     public static string GB(long bytes) => (bytes / 1_000_000_000d).ToString("N3", CultureInfo.InvariantCulture) + " GB";
 
+    public override async Task OnPageHandlerExecutionAsync(PageHandlerExecutingContext context, PageHandlerExecutionDelegate next)
+    {
+        Response.Headers.CacheControl = "no-store";
+        Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        // Use the same resolved visitor address and whitelist as the files page.
+        if (!access.Allows(HttpContext.Connection.RemoteIpAddress))
+        {
+            context.Result = new ContentResult { StatusCode = 403, ContentType = "text/plain; charset=utf-8",
+                Content = "无权访问。 / Access denied." };
+            return;
+        }
+        await next();
+    }
+
     public async Task OnGetAsync(string? lang, int number = 1)
     {
         English = lang == "en";
-        Response.Headers.CacheControl = "no-store";
-        Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
         Requests = counter.GetStatus();
         try { Storage = await store.GetStatusAsync(HttpContext.RequestAborted); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)

@@ -9,7 +9,13 @@
     <link rel="stylesheet" href="/css/files.css" />
 </head>
 <body><main>
-    <header><a href="/">Mod Log Helper</a><nav aria-label="Language"><a href="@Model.LanguageLink(false)" lang="zh-CN">中文</a><a href="@Model.LanguageLink(true)" lang="en">English</a></nav></header>
+    <header>
+        <nav aria-label="Navigation / 导航">
+            <a href="/?lang=@(Model.English ? "en" : "zh")">Home</a>
+            <a href="/status?lang=@(Model.English ? "en" : "zh")">status</a>
+        </nav>
+        <nav aria-label="Language"><a href="@Model.LanguageLink(false)" lang="zh-CN">中文</a><a href="@Model.LanguageLink(true)" lang="en">English</a></nav>
+    </header>
     <h1>@Model.T("上传文件", "Uploaded files")</h1>
     @if (Model.FileName is not null)
     {

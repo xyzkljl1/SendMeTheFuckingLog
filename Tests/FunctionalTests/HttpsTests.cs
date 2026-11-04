@@ -120,6 +120,7 @@ public sealed class HttpsTests
         world.Write("acme/.well-known/acme-challenge/test-token", "challenge");
         var ports = Ports(1);
         var app = world.Start(ports.Settings); app.UseKestrel(); app.StartServer();
+        await app.RefreshAccess();
         using var https = Client(ports.Https, cert);
         Assert.Equal(HttpStatusCode.OK, (await https.GetAsync("/", TestContext.Current.CancellationToken)).StatusCode);
         Assert.Equal(HttpStatusCode.TooManyRequests, (await https.GetAsync("/", TestContext.Current.CancellationToken)).StatusCode);

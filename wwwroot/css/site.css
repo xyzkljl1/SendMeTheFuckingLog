@@ -60,7 +60,7 @@ main{max-width:1160px;margin:0 auto;padding:18px 28px 36px}.intro{text-align:cen
 .status.recognition-success{display:flex;align-items:center;gap:12px;padding:16px 18px;border:2px solid #177568;border-radius:10px;background:#e8f6ee;color:#105c43;font-size:22px;font-weight:750;line-height:1.5}
 .status.recognition-success::before{content:"✓";display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border-radius:50%;background:#177568;color:#fff;font-size:22px}
 
-.status-link{margin-right:auto;color:var(--accent);font-size:13px;text-underline-offset:3px}
+.page-navigation{display:flex;align-items:center;gap:18px;margin-right:auto}.page-navigation a{color:var(--accent);font-size:13px;text-underline-offset:3px}
 .intro .supported-line{margin:5px 0 0}
 .selection-slot .selection-section{margin-top:12px;padding:14px}
 .selection-slot .selection-heading{flex-wrap:wrap;gap:6px}

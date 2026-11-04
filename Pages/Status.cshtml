@@ -12,7 +12,13 @@
     </style>
 </head>
 <body><main>
-    <header><a href="/">Mod Log Helper</a><nav aria-label="Language"><a href="@Model.Link(Model.Number, false)" lang="zh-CN">中文</a><a href="@Model.Link(Model.Number, true)" lang="en">English</a></nav></header>
+    <header>
+        <nav aria-label="Navigation / 导航">
+            <a href="/?lang=@(Model.English ? "en" : "zh")">Home</a>
+            <a href="/files?lang=@(Model.English ? "en" : "zh")">files</a>
+        </nav>
+        <nav aria-label="Language"><a href="@Model.Link(Model.Number, false)" lang="zh-CN">中文</a><a href="@Model.Link(Model.Number, true)" lang="en">English</a></nav>
+    </header>
     <h1>@Model.T("网站状态", "Website status")</h1>
     <nav><p class="muted">@Model.T("页面时间（UTC）", "Page time (UTC)")：@Model.CheckedAt.ToString("yyyy-MM-dd HH:mm:ss")</p><a class="button" href="@Model.Link(Model.Number)">@Model.T("刷新状态", "Refresh status")</a></nav>
     <section class="card" aria-labelledby="request-title">
@@ -24,7 +30,6 @@
         @foreach (var window in Model.Requests.Windows)
         { <tr><td>@window.Hours @Model.T("小时", "hours")</td><td>@window.Used.ToString("N0") / @window.Limit.ToString("N0")<progress max="@window.Limit" value="@window.Used" aria-label="@window.Hours hours"></progress></td><td>@Math.Max(0, window.Limit - window.Used).ToString("N0")</td></tr> }
         </tbody></table>
-        <p class="muted">@Model.T("统计已放行的请求；被拒绝的请求不继续消耗额度。任意窗口达到上限即限制访问。", "Counts admitted requests. Rejected requests do not consume additional quota. Reaching any window's limit restricts access.")</p>
     </section>
     <section class="card" aria-labelledby="traffic-title">
         <div class="section-title"><h2 id="traffic-title">@Model.T("服务器流量保护", "Server traffic protection")</h2>
@@ -42,7 +47,6 @@
             <p class="muted">@Model.T("最近成功采集（UTC）", "Last successful sample (UTC)")：@sample.ObservedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss")</p>
         }
         else { <p class="muted">@(Model.TrafficReadFailed ? Model.T("无法读取监控数据。", "Unable to read monitor data.") : Model.T("尚未收到宿主机的监控数据。本机调试不会运行宿主机流量监控。", "No host monitoring data received. Host traffic monitoring does not run during local debugging."))</p> }
-        <p class="muted">@Model.T("按 UTC 自然日、自然月累计入站与出站总流量，每分钟采集。任一阈值达到即触发关机；超过 3 分钟未更新会标记为过期。", "Inbound and outbound traffic is sampled every minute and totaled by UTC calendar day and month. Either threshold triggers shutdown. Samples older than 3 minutes are marked stale.")</p>
     </section>
     <section class="card" aria-labelledby="storage-title">
         <h2 id="storage-title">@Model.T("已保存的上传", "Saved uploads")</h2>
@@ -59,7 +63,6 @@
                 <span class="muted">@Model.Number / @Model.TotalPages</span>
                 @if (Model.Number < Model.TotalPages) { <a href="@Model.Link(Model.Number + 1)">@Model.T("下一页", "Next")</a> }
             </nav>
-            <p class="muted">@Model.T("每页 50 个文件夹，最新上传在前；文件数仅统计上传文件。列表最多延迟 15 秒更新。", "50 folders per page, newest first. Counts include uploaded files only. The list may be up to 15 seconds old.")</p>
         }
         else { <p class="badge error">@Model.T("暂时无法读取文件列表。", "The folder list is temporarily unavailable.")</p> }
     </section>
