@@ -23,6 +23,7 @@ public sealed class FilesModel(AuthorAccess access, SubmissionStore store, GameC
     public int Number { get; private set; } = 1;
     public string T(string zh, string en) => English ? en : zh;
     public string Link(int number, bool? english = null) => $"/files?number={number}&lang={((english ?? English) ? "en" : "zh")}";
+    public string ReadActionLink => Link(Number) + "&handler=Read";
     public string FileLink(string handler, string id, string name, bool? english = null) =>
         $"/files?handler={handler}&submission={Uri.EscapeDataString(id)}&name={Uri.EscapeDataString(name)}&number={Number}&lang={((english ?? English) ? "en" : "zh")}";
     public string LanguageLink(bool english) => FileName is null ? Link(Number, english) : FileLink("View", Submission!, FileName, english);
@@ -63,6 +64,28 @@ public sealed class FilesModel(AuthorAccess access, SubmissionStore store, GameC
             logger.LogWarning(error, "Unable to browse submissions.");
             Response.StatusCode = 503;
             Error = T("暂时无法读取文件，请稍后刷新。", "Can't load the files right now. Please try again shortly.");
+        }
+    }
+
+    public async Task<IActionResult> OnPostReadAsync(string? submission, bool? isRead, string? lang, int number = 1)
+    {
+        English = lang == "en";
+        Number = Math.Max(1, number);
+        if (!ModelState.IsValid || isRead is null) return BadRequest();
+        try
+        {
+            await store.SetReadAsync(submission, isRead.Value, HttpContext.RequestAborted);
+            return Redirect(Link(Number));
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(error, "Unable to update submission read state.");
+            await OnGetAsync(lang, Number);
+            Response.StatusCode = error is FileNotFoundException or DirectoryNotFoundException ? 404 : 503;
+            Error = Response.StatusCode == 404
+                ? T("这份提交不存在或已清理，请刷新列表。", "This submission has been removed or does not exist. Refresh the list.")
+                : T("未能保存已读状态，请重试。", "Couldn't save the read status. Please try again.");
+            return Page();
         }
     }
 

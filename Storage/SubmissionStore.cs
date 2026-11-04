@@ -47,7 +47,7 @@ public sealed partial class SubmissionStore : IDisposable
                 foreach (var file in Directory.EnumerateFiles(directory))
                 {
                     EnsurePlain(file);
-                    if (Path.GetFileName(file) != "submission.json") count++;
+                    if (Path.GetFileName(file) != "submission.json" && !IsReadMarker(Path.GetFileName(file))) count++;
                 }
                 folders.Add(new SubmissionFolder(Path.GetFileName(directory), count));
             }
@@ -119,7 +119,7 @@ public sealed partial class SubmissionStore : IDisposable
             var receivedAt = DateTimeOffset.UtcNow;
             var id = $"{receivedAt.ToOffset(TimeSpan.FromHours(8)).ToString("yyyy-MM-dd_HHmmss", CultureInfo.InvariantCulture)}_{game?.Id ?? "screenshots"}_{Guid.NewGuid():N}";
             id = id[..^16]; // Keep a random 64-bit suffix; collisions are also checked below.
-            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "submission.json", ".writer.lock" };
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "submission.json", ".writer.lock", ReadMarker };
             var files = description.Files.Select((file, index) => new StoredFile(file.ItemId, file.FileName,
                 screenshots ? $"screenshot-{index + 1:D2}{Path.GetExtension(file.FileName).ToLowerInvariant()}" : UniqueName(file.FileName, names),
                 file.Size, file.Sha256.ToLowerInvariant())).ToArray();

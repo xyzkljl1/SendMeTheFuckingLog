@@ -1,11 +1,15 @@
 :root{font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:#203233;background:#f6f8f7;line-height:1.6}
 *{box-sizing:border-box}body{margin:0}main{max-width:1080px;margin:auto;padding:28px 22px 60px}
 header,nav,.title-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-a{color:#177568;text-underline-offset:3px}a:focus-visible{outline:3px solid #e5ae53;outline-offset:4px}
+a{color:#177568;text-underline-offset:3px}a:focus-visible,button:focus-visible{outline:3px solid #e5ae53;outline-offset:4px}
 h1{font-size:30px;margin:26px 0 18px}h2{font-size:19px;margin:0;overflow-wrap:anywhere}p{margin:10px 0}
 .card{background:white;border:1px solid #dde6e2;border-radius:12px;padding:22px;margin-top:20px}
 .muted{color:#687b79;font-size:13px;overflow-wrap:anywhere}.game{color:#24634f;background:#e8f3ed;padding:3px 12px;border-radius:20px}
 .button{border:1px solid #c8dcd2;border-radius:7px;padding:7px 13px;text-decoration:none;background:white}
+button.button{font:inherit;color:#177568;cursor:pointer}button.button:hover{background:#edf5f1}
+.submission-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.submission-actions form{margin:0}
+.read-state{border-radius:20px;padding:3px 12px;font-weight:600;font-size:14px;background:#edf0ef;color:#687b79}
+.is-unread{border-left:4px solid #177568}.is-unread .read-state{background:#177568;color:white}
 .table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:12px 8px;border-bottom:1px solid #e6eeea}th{color:#687b79;font-weight:500}td:first-child{overflow-wrap:anywhere}td:last-child,th:last-child{text-align:right}td:nth-child(2){white-space:nowrap}
 pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f6f8f7;border:1px solid #e6eeea;border-radius:6px;padding:16px;font:13px/1.7 Consolas,monospace;tab-size:4}
 .notice{color:#775422}.pagination{margin-top:22px}

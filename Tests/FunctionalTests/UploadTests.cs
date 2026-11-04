@@ -123,6 +123,7 @@ public sealed class UploadTests
         await using var world = new TestWorld();
         var old = world.SeedSubmission(1, new string('a', 40000));
         var newer = world.SeedSubmission(2, new string('b', 40000));
+        world.Write($"data/{old}/.read", "");
         using var client = world.Start(new()
         {
             ["Storage:MaxStorageMiB"] = "0.125", ["Storage:MaxFileMiB"] = "0.0625",

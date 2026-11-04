@@ -33,11 +33,24 @@
     }
     else if (Model.Listing is { } listing)
     {
-        <nav><p class="muted">@Model.T("最新上传在前，每页 50 次提交。", "Newest first, 50 uploads per page.")</p><a class="button" href="@Model.Link(Model.Number)">@Model.T("刷新", "Refresh")</a></nav>
+        <nav><p class="muted">@Model.T("未读优先，同组按最新上传排序。", "Unread first, newest first within each group.")</p><a class="button" href="@Model.Link(Model.Number)">@Model.T("刷新", "Refresh")</a></nav>
+        @if (Model.Error is not null) { <p class="notice" role="alert">@Model.Error</p> }
         @foreach (var submission in listing.Submissions)
         {
-            <section class="card">
-                <div class="title-row"><h2>@(submission.Nickname ?? Model.T("未知昵称", "Unknown nickname"))</h2><span class="game">@(submission.Kind == "screenshots" ? Model.T("截图", "Screenshots") : Model.GameName(submission.GameId))</span></div>
+            <section class="card submission-card @(submission.IsRead ? "is-read" : "is-unread")" data-submission="@submission.Id">
+                <div class="title-row">
+                    <h2>@(submission.Nickname ?? Model.T("未知昵称", "Unknown nickname"))</h2>
+                    <div class="submission-actions">
+                        <span class="game">@(submission.Kind == "screenshots" ? Model.T("截图", "Screenshots") : Model.GameName(submission.GameId))</span>
+                        <span class="read-state">@(submission.IsRead ? Model.T("已读", "Read") : Model.T("未读", "Unread"))</span>
+                        <form method="post" action="@Model.ReadActionLink">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="submission" value="@submission.Id" />
+                            <input type="hidden" name="isRead" value="@(submission.IsRead ? "false" : "true")" />
+                            <button class="button" type="submit">@(submission.IsRead ? Model.T("标记未读", "Mark as unread") : Model.T("标记已读", "Mark as read"))</button>
+                        </form>
+                    </div>
+                </div>
                 <p class="muted">@submission.Id</p>
                 @if (submission.Kind == "screenshots")
                 {
@@ -66,6 +79,6 @@
             @if (Model.Number < listing.TotalPages) { <a href="@Model.Link(Model.Number + 1)">@Model.T("下一页", "Next")</a> }
         </nav>
     }
-    else { <p class="card notice">@Model.Error</p> }
+    else { <p class="card notice" role="alert">@Model.Error</p> }
 </main></body>
 </html>
