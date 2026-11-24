@@ -11,10 +11,13 @@ from configuration import application_settings, prepared, tls_settings
 
 
 def main():
-    required = ["DEPLOY_HOST", "DEPLOY_USER", "DEPLOY_PORT", "DEPLOY_SSH_KEY",
+    required = ["DEPLOY_HOST", "DEPLOY_USER", "DEPLOY_PORT",
                 "GH_TOKEN", "GITHUB_ACTOR", "GITHUB_SHA",
                 "GITHUB_RUN_NUMBER", "APP_IMAGE", "GITHUB_REPOSITORY"]
     missing = [name for name in required if not os.environ.get(name, "").strip()]
+    private_key = os.environ.get("DEPLOY_SSH_KEY", "").strip()
+    if not private_key and not os.environ.get("DEPLOY_SSH_PASSWORD"):
+        missing.append("DEPLOY_SSH_KEY or DEPLOY_SSH_PASSWORD")
     if missing:
         raise ValueError("Missing configuration: " + ", ".join(missing))
     host, user, port = (os.environ[name] for name in required[:3])
@@ -45,16 +48,26 @@ def main():
     bootstrap = "import json,sys; p=json.load(sys.stdin); exec(compile(p.pop('script'),'<deployment>','exec')); main(p)"
     # Temporary credentials are inside the checkout and removed even on failure.
     with tempfile.TemporaryDirectory(prefix=".ssh-", dir=root) as directory:
-        key = Path(directory) / "key"
-        key.write_text(os.environ["DEPLOY_SSH_KEY"].replace("\r", "").strip() + "\n", encoding="utf-8")
-        key.chmod(0o600)
-        args = ["ssh", "-F", "/dev/null", "-T", "-i", str(key), "-p", port,
-                "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=no",
+        ssh_env = os.environ.copy()
+        if private_key:
+            key = Path(directory) / "key"
+            key.write_text(private_key.replace("\r", "") + "\n", encoding="utf-8")
+            key.chmod(0o600)
+            auth = ["-i", str(key), "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes"]
+        else:
+            # OpenSSH gets the password via askpass so stdin stays available for the deployment payload.
+            askpass = Path(directory) / "askpass"
+            askpass.write_text("#!/bin/sh\nprintf '%s\\n' \"$DEPLOY_SSH_PASSWORD\"\n", encoding="utf-8")
+            askpass.chmod(0o700)
+            ssh_env.update(SSH_ASKPASS=str(askpass), SSH_ASKPASS_REQUIRE="force")
+            auth = ["-o", "PreferredAuthentications=password,keyboard-interactive", "-o", "NumberOfPasswordPrompts=1"]
+        args = ["ssh", "-F", "/dev/null", "-T", *auth, "-p", port,
+                "-o", "StrictHostKeyChecking=no",
                 "-o", "UserKnownHostsFile=/dev/null", "-o", "GlobalKnownHostsFile=/dev/null",
                 "-o", "UpdateHostKeys=no", "-o", "ConnectTimeout=15",
                 "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4",
                 f"{user}@{host}", "sudo -n python3 -c " + shlex.quote(bootstrap)]
-        subprocess.run(args, input=json.dumps(payload), text=True, check=True, timeout=1800)
+        subprocess.run(args, input=json.dumps(payload), env=ssh_env, text=True, check=True, timeout=1800)
 
 
 if __name__ == "__main__":

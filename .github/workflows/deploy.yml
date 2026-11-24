@@ -60,7 +60,6 @@ jobs:
       DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
       DEPLOY_USER: ${{ vars.DEPLOY_USER }}
       DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
-      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
       CONFIG_REPOSITORY: ${{ vars.CONFIG_REPOSITORY }}
     defaults:
       run:
@@ -99,6 +98,8 @@ jobs:
           printf 'REPOSITORY_OWNER=%s\n' "${owner,,}" >> "$GITHUB_ENV"
 
       - name: Check configuration
+        env:
+          SSH_AUTH_CONFIGURED: ${{ secrets.DEPLOY_SSH_KEY != '' || secrets.DEPLOY_SSH_PASSWORD != '' }}
         run: |
           for name in DEPLOY_HOST DEPLOY_USER DEPLOY_PORT; do
             if [[ -z "${!name}" ]]; then
@@ -106,8 +107,8 @@ jobs:
               exit 1
             fi
           done
-          if [[ -z "$DEPLOY_SSH_KEY" ]]; then
-            echo '::error::Missing repository secret: DEPLOY_SSH_KEY'
+          if [[ "$SSH_AUTH_CONFIGURED" != true ]]; then
+            echo '::error::Set DEPLOY_SSH_KEY or DEPLOY_SSH_PASSWORD.'
             exit 1
           fi
           bash -n deployment/healthcheck.sh
@@ -187,6 +188,8 @@ jobs:
       - name: Deploy and clean old server images
         env:
           GH_TOKEN: ${{ github.token }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
         run: python3 -B deployment/deploy.py
 
       - name: Verify public HTTPS and certificate

@@ -21,7 +21,7 @@
 
 - GitHub 仓库和 Linux x86_64 服务器。
 - 服务器安装 systemd、Python 3、提供 `ip` 命令的工具，以及 [Docker Engine 和 Compose 插件](https://docs.docker.com/engine/install/ubuntu/)。全新的 Ubuntu 24.04 x86_64 服务器可使用下面的初始化脚本。
-- SSH 部署账号支持密钥登录，并能通过 `sudo -n` 执行 Python 3。
+- SSH 部署账号支持密钥或密码登录，并能通过 `sudo -n` 执行 Python 3。
 - 网站域名解析到服务器，开放 TCP 80、443 和 SSH 端口。
 - 图片托管地址，配置方式见下文。
 
@@ -45,7 +45,7 @@ sudo bash init-ubuntu.sh
 初始化成功后，完成这些设置：
 
 - 将网站域名解析到服务器。在云防火墙及已启用的系统防火墙中开放 TCP 80、443 和 SSH 端口（默认 22）。
-- 配置部署账号的 SSH 公钥和免密 sudo。用该账号运行 `sudo -n python3 --version`，应直接输出版本。
+- 确认部署账号可用密钥或密码登录，并已配置免密 sudo。用该账号运行 `sudo -n python3 --version`，应直接输出版本。
 - 按下文填写网站配置以及 GitHub Variables、Secrets，再运行部署工作流。
 
 初始化脚本只准备服务器依赖。网站、证书和监控由现有 Actions 部署；后续版本更新直接使用 Actions。
@@ -131,6 +131,7 @@ sudo bash init-ubuntu.sh
 | Variable | `DEPLOY_USER` | SSH 登录用户名 |
 | Variable | `DEPLOY_PORT` | SSH 端口，默认 `22` |
 | Secret | `DEPLOY_SSH_KEY` | 用于部署的 SSH 私钥内容，对应公钥需已安装到服务器 |
+| Secret | `DEPLOY_SSH_PASSWORD` | SSH 部署账号的登录密码，仅在未设置 `DEPLOY_SSH_KEY` 时使用 |
 
 也可以使用私有配置仓库集中管理个人设置。在主仓库设置 Variable `CONFIG_REPOSITORY`（格式为 `所有者/仓库名`），并设置 Secret `CONFIG_READ_KEY`，内容为具有该配置仓库只读权限的 SSH 私钥。
 
