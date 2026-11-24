@@ -126,6 +126,12 @@ def install_traffic_monitor(payload):
             raise ValueError("Unit ownership marker is missing.")
         if path.exists() and (not path.is_file() or not path.read_text(encoding="utf-8").startswith(UNIT_MARKER)):
             raise RuntimeError(f"Refusing to replace an unrelated systemd unit: {path}")
+    if not payload["application"]["Uploads"]["Enabled"]:
+        if (UNIT_DIRECTORY / TRAFFIC_TIMER).exists():
+            run("systemctl", "disable", "--now", TRAFFIC_TIMER, timeout=60)
+        if (UNIT_DIRECTORY / TRAFFIC_SERVICE).exists():
+            run("systemctl", "stop", TRAFFIC_SERVICE, timeout=60)
+        return
     # Preflight before stopping an existing monitor. No extra packages or credentials are installed.
     run("systemctl", "--version", stdout=subprocess.DEVNULL)
     run("ip", "-j", "route", "show", "default", stdout=subprocess.DEVNULL)

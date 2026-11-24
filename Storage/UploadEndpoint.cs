@@ -6,8 +6,10 @@ namespace SendMeTheFuckingLog.Storage;
 public static class UploadEndpoint
 {
     public static async Task<IResult> HandleAsync(HttpContext context, IAntiforgery antiforgery,
-        SubmissionStore store, ILogger<SubmissionStore> logger)
+        SubmissionStore store, ILogger<SubmissionStore> logger, IConfiguration configuration)
     {
+        if (!configuration.GetValue("Uploads:Enabled", true))
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
         try
         {
             if (!context.Request.Headers.ContainsKey("X-CSRF-TOKEN"))

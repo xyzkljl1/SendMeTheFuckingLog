@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 PREPARED = ".deployment-config/instance.json"
-APPLICATION_KEYS = ("Logging", "Tls", "ReverseProxy", "UploadPage", "ImageHosting",
+APPLICATION_KEYS = ("Logging", "Tls", "ReverseProxy", "UploadPage", "Uploads", "ImageHosting",
                     "GlobalRateLimit", "AuthorAccess", "Storage")
 
 
