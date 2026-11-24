@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Deployment target (leave blank for the default server)'
+        type: string
+        required: false
 
 # Never interrupt a deployment halfway through a container replacement or cleanup.
 concurrency:
@@ -86,7 +91,9 @@ jobs:
           path: .private-config
 
       - name: Merge and validate instance configuration
+        id: instance
         env:
+          DEPLOY_TARGET: ${{ inputs.target }}
           CONFIG_VARIABLES_JSON: ${{ toJSON(vars) }}
         run: python3 -B deployment/configuration.py prepare
 
@@ -99,7 +106,7 @@ jobs:
 
       - name: Check configuration
         env:
-          SSH_AUTH_CONFIGURED: ${{ secrets.DEPLOY_SSH_KEY != '' || secrets.DEPLOY_SSH_PASSWORD != '' }}
+          SSH_AUTH_CONFIGURED: ${{ secrets[fromJSON(steps.instance.outputs.ssh).key] != '' || secrets[fromJSON(steps.instance.outputs.ssh).password] != '' }}
         run: |
           for name in DEPLOY_HOST DEPLOY_USER DEPLOY_PORT; do
             if [[ -z "${!name}" ]]; then
@@ -108,7 +115,7 @@ jobs:
             fi
           done
           if [[ "$SSH_AUTH_CONFIGURED" != true ]]; then
-            echo '::error::Set DEPLOY_SSH_KEY or DEPLOY_SSH_PASSWORD.'
+            echo '::error::Set the SSH key or password secret for the deployment target.'
             exit 1
           fi
           bash -n deployment/healthcheck.sh
@@ -188,8 +195,8 @@ jobs:
       - name: Deploy and clean old server images
         env:
           GH_TOKEN: ${{ github.token }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_SSH_PASSWORD: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+          DEPLOY_SSH_KEY: ${{ secrets[fromJSON(steps.instance.outputs.ssh).key] }}
+          DEPLOY_SSH_PASSWORD: ${{ secrets[fromJSON(steps.instance.outputs.ssh).password] }}
         run: python3 -B deployment/deploy.py
 
       - name: Verify public HTTPS and certificate

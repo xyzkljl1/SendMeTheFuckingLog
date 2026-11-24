@@ -188,8 +188,22 @@ def prepared(root=ROOT):
     return value
 
 
-def prepare(root=ROOT):
+def deployment_target(root, target):
     settings = resolve(root)
+    if not target:
+        return settings, {"key": "DEPLOY_SSH_KEY", "password": "DEPLOY_SSH_PASSWORD"}
+    config_dir = root / ".private-config" if settings["CONFIG_REPOSITORY"] else root
+    profile = read(config_dir / "deployment-targets.json")[target]
+    merge(settings, profile["settings"])
+    target_variables = json.loads(variables().get("DEPLOY_TARGET_VARIABLES") or "{}")
+    apply_variables(settings, target_variables.get(target, {}))
+    prefixes = profile["sshSecretPrefixes"]
+    secrets = {kind: f"{prefixes[kind]}_SSH_{kind.upper()}" for kind in ("key", "password") if kind in prefixes}
+    return settings, secrets
+
+
+def prepare(root=ROOT):
+    settings, secrets = deployment_target(root, os.environ.get("DEPLOY_TARGET", ""))
     validate(settings)
     directory = root / ".deployment-config"
     if directory.is_symlink():
@@ -210,6 +224,9 @@ def prepare(root=ROOT):
                                "APP_HTTP_PORT": settings["Tls"]["HttpPort"],
                                "APP_HTTPS_PORT": settings["Tls"]["HttpsPort"]}.items():
                 stream.write(f"{key}={value}\n")
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
+            stream.write("ssh=" + json.dumps(secrets) + "\n")
     if settings["CONFIG_REPOSITORY"]:
         revision = subprocess.run(["git", "-C", str(root / ".private-config"), "rev-parse", "HEAD"],
                                   check=True, capture_output=True, text=True).stdout.strip()
